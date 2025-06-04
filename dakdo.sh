@@ -85,9 +85,12 @@ EOF
 
 backup_website() {
     read -p "💾 Nhập domain cần backup: " DOMAIN
-    ZIP_FILE="${DOMAIN}_backup_$(date +%F).zip"
+    BACKUP_DIR="/root/backups"
+    mkdir -p "$BACKUP_DIR"
+    ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
     zip -r "$ZIP_FILE" "$WWW_DIR/$DOMAIN"
     echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
+    du -h "$ZIP_FILE"
 }
 
 remove_website() {
