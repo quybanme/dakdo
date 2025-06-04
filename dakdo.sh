@@ -28,11 +28,15 @@ check_domain() {
 }
 
 install_base() {
-    echo -e "${GREEN}🔧 Cài đặt Nginx, Certbot và công cụ hỗ trợ...${NC}"
-    apt update -y
-    apt install nginx certbot python3-certbot-nginx zip unzip curl dnsutils -y
-    systemctl enable nginx
-    systemctl start nginx
+    if command -v nginx > /dev/null; then
+        echo -e "${GREEN}✅ Nginx đã được cài. Bỏ qua bước cài đặt.${NC}"
+    else
+        echo -e "${GREEN}🔧 Cài đặt Nginx, Certbot và công cụ hỗ trợ...${NC}"
+        apt update -y
+        apt install nginx certbot python3-certbot-nginx zip unzip curl dnsutils -y
+        systemctl enable nginx
+        systemctl start nginx
+    fi
 
     # Setup auto-renew SSL
     if ! crontab -l | grep -q 'certbot renew'; then
@@ -46,7 +50,9 @@ add_website() {
     check_domain "$DOMAIN" || exit 1
     SITE_DIR="$WWW_DIR/$DOMAIN"
     mkdir -p "$SITE_DIR"
-    echo "<h1>DAKDO - Website $DOMAIN hoạt động!</h1>" > "$SITE_DIR/index.html"
+    if [ ! -f "$SITE_DIR/index.html" ]; then
+        echo "<h1>DAKDO - Website $DOMAIN hoạt động!</h1>" > "$SITE_DIR/index.html"
+    fi
 
     CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN"
     cat > "$CONFIG_FILE" <<EOF
@@ -62,7 +68,7 @@ server {
 }
 EOF
 
-    ln -sf "$CONFIG_FILE" /etc/nginx/sites-enabled/
+    [ -L /etc/nginx/sites-enabled/$DOMAIN ] || ln -s "$CONFIG_FILE" /etc/nginx/sites-enabled/
     nginx -t && systemctl reload nginx
     echo -e "${GREEN}✅ Website $DOMAIN đã được tạo!${NC}"
 
@@ -81,7 +87,7 @@ backup_website() {
     read -p "💾 Nhập domain cần backup: " DOMAIN
     ZIP_FILE="${DOMAIN}_backup_$(date +%F).zip"
     zip -r "$ZIP_FILE" "$WWW_DIR/$DOMAIN"
-    echo -e "${GREEN}✅ Backup hoàn tất: $ZIP_FILE${NC}"
+    echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
 }
 
 remove_website() {
