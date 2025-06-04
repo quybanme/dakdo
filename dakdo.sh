@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v1.2 – Web Manager for HTML + SSL (Upgraded)
+# DAKDO v1.3 – Web Manager for HTML + SSL (Upgraded)
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.2"
+DAKDO_VERSION="1.3"
 WWW_DIR="/var/www"
 EMAIL="admin@dakdo.vn"
 GREEN="\e[32m"
@@ -92,6 +92,22 @@ EOF
     fi
 }
 
+ssl_manual() {
+    read -p "🔐 Nhập domain để cài/gia hạn SSL (nhập 0 để quay lại): " DOMAIN
+    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return
+    fi
+    check_domain "$DOMAIN" || return
+    echo -e "${YELLOW}⚠️ Lưu ý: Hãy tắt đám mây vàng (Proxy) trên Cloudflare trước khi cài/gia hạn SSL.${NC}"
+    certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}🔒 SSL đã cài/gia hạn thành công cho $DOMAIN${NC}"
+    else
+        echo -e "${RED}❌ Cài/gia hạn SSL thất bại. Vui lòng kiểm tra cấu hình hoặc kết nối.${NC}"
+    fi
+}
+
 backup_website() {
     read -p "💾 Nhập domain cần backup (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
@@ -144,9 +160,10 @@ menu_dakdo() {
     echo "4. Xoá Website"
     echo "5. Kiểm tra Domain"
     echo "6. Danh sách Website đã cài"
-    echo "7. Thông tin hệ thống"
-    echo "8. Thoát"
-    read -p "→ Chọn thao tác (1-8): " CHOICE
+    echo "7. Cài / Gia hạn SSL cho Website"
+    echo "8. Thông tin hệ thống"
+    echo "9. Thoát"
+    read -p "→ Chọn thao tác (1-9): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -161,8 +178,9 @@ menu_dakdo() {
             fi
             ;;
         6) list_websites ;;
-        7) info_dakdo ;;
-        8) exit 0 ;;
+        7) ssl_manual ;;
+        8) info_dakdo ;;
+        9) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
 }
