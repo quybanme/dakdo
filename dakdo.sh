@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# DAKDO v1.1 – Web Manager for HTML + SSL (Upgraded)
+# DAKDO v1.2 – Web Manager for HTML + SSL (Upgraded)
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.1"
+DAKDO_VERSION="1.2"
 WWW_DIR="/var/www"
 EMAIL="admin@dakdo.vn"
 GREEN="\e[32m"
 RED="\e[31m"
+YELLOW="\e[33m"
 NC="\e[0m"
 
 # Ensure required directories
@@ -16,6 +17,10 @@ mkdir -p /etc/nginx/sites-enabled
 
 check_domain() {
     DOMAIN="$1"
+    if [[ "$DOMAIN" == "0" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return 1
+    fi
     DOMAIN_IP=$(dig +short "$DOMAIN" | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
     SERVER_IP=$(curl -s ifconfig.me)
     if [ "$DOMAIN_IP" = "$SERVER_IP" ]; then
@@ -46,8 +51,12 @@ install_base() {
 }
 
 add_website() {
-    read -p "🌐 Nhập domain cần thêm: " DOMAIN
-    check_domain "$DOMAIN" || exit 1
+    read -p "🌐 Nhập domain cần thêm (nhập 0 để quay lại): " DOMAIN
+    if [[ "$DOMAIN" == "0" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return
+    fi
+    check_domain "$DOMAIN" || return
     SITE_DIR="$WWW_DIR/$DOMAIN"
     mkdir -p "$SITE_DIR"
     if [ ! -f "$SITE_DIR/index.html" ]; then
@@ -84,7 +93,11 @@ EOF
 }
 
 backup_website() {
-    read -p "💾 Nhập domain cần backup: " DOMAIN
+    read -p "💾 Nhập domain cần backup (nhập 0 để quay lại): " DOMAIN
+    if [[ "$DOMAIN" == "0" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return
+    fi
     BACKUP_DIR="/root/backups"
     mkdir -p "$BACKUP_DIR"
     ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
@@ -94,7 +107,11 @@ backup_website() {
 }
 
 remove_website() {
-    read -p "⚠ Nhập domain cần xoá: " DOMAIN
+    read -p "⚠ Nhập domain cần xoá (nhập 0 để quay lại): " DOMAIN
+    if [[ "$DOMAIN" == "0" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return
+    fi
     rm -rf "$WWW_DIR/$DOMAIN"
     rm -f "/etc/nginx/sites-enabled/$DOMAIN"
     rm -f "/etc/nginx/sites-available/$DOMAIN"
@@ -135,7 +152,14 @@ menu_dakdo() {
         2) add_website ;;
         3) backup_website ;;
         4) remove_website ;;
-        5) read -p "🌐 Nhập domain để kiểm tra: " DOMAIN && check_domain "$DOMAIN" ;;
+        5)
+            read -p "🌐 Nhập domain để kiểm tra (nhập 0 để quay lại): " DOMAIN
+            if [[ "$DOMAIN" == "0" ]]; then
+                echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+            else
+                check_domain "$DOMAIN"
+            fi
+            ;;
         6) list_websites ;;
         7) info_dakdo ;;
         8) exit 0 ;;
