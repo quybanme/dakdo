@@ -17,7 +17,7 @@ mkdir -p /etc/nginx/sites-enabled
 
 check_domain() {
     DOMAIN="$1"
-    if [[ "$DOMAIN" == "0" ]]; then
+    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return 1
     fi
@@ -52,7 +52,7 @@ install_base() {
 
 add_website() {
     read -p "🌐 Nhập domain cần thêm (nhập 0 để quay lại): " DOMAIN
-    if [[ "$DOMAIN" == "0" ]]; then
+    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
@@ -94,7 +94,7 @@ EOF
 
 backup_website() {
     read -p "💾 Nhập domain cần backup (nhập 0 để quay lại): " DOMAIN
-    if [[ "$DOMAIN" == "0" ]]; then
+    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
@@ -108,7 +108,7 @@ backup_website() {
 
 remove_website() {
     read -p "⚠ Nhập domain cần xoá (nhập 0 để quay lại): " DOMAIN
-    if [[ "$DOMAIN" == "0" ]]; then
+    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
@@ -154,7 +154,7 @@ menu_dakdo() {
         4) remove_website ;;
         5)
             read -p "🌐 Nhập domain để kiểm tra (nhập 0 để quay lại): " DOMAIN
-            if [[ "$DOMAIN" == "0" ]]; then
+            if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
                 echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
             else
                 check_domain "$DOMAIN"
