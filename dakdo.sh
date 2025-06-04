@@ -1,16 +1,19 @@
 #!/bin/bash
 
-# ──────────────── THÔNG TIN ────────────────
-DAKDO_VERSION="1.0"
+# DAKDO v1.1 – Web Manager for HTML + SSL (Upgraded)
+# Author: @quybanme – https://github.com/quybanme
+
+DAKDO_VERSION="1.1"
 WWW_DIR="/var/www"
 EMAIL="admin@dakdo.vn"
-
-# ──────────────── MÀU SẮC ────────────────
 GREEN="\e[32m"
 RED="\e[31m"
 NC="\e[0m"
 
-# ──────────────── KIỂM TRA DOMAIN ────────────────
+# Ensure required directories
+mkdir -p /etc/nginx/sites-available
+mkdir -p /etc/nginx/sites-enabled
+
 check_domain() {
     DOMAIN="$1"
     DOMAIN_IP=$(dig +short "$DOMAIN" | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
@@ -24,25 +27,27 @@ check_domain() {
     fi
 }
 
-# ──────────────── CÀI ĐẶT DAKDO ────────────────
 install_base() {
     echo -e "${GREEN}🔧 Cài đặt Nginx, Certbot và công cụ hỗ trợ...${NC}"
     apt update -y
     apt install nginx certbot python3-certbot-nginx zip unzip curl dnsutils -y
     systemctl enable nginx
     systemctl start nginx
+
+    # Setup auto-renew SSL
+    if ! crontab -l | grep -q 'certbot renew'; then
+        (crontab -l 2>/dev/null; echo "0 3 * * * /usr/bin/certbot renew --quiet") | crontab -
+        echo "✅ Đã thêm cron tự động gia hạn SSL"
+    fi
 }
 
-# ──────────────── THÊM WEBSITE ────────────────
 add_website() {
     read -p "🌐 Nhập domain cần thêm: " DOMAIN
     check_domain "$DOMAIN" || exit 1
-
     SITE_DIR="$WWW_DIR/$DOMAIN"
     mkdir -p "$SITE_DIR"
     echo "<h1>DAKDO - Website $DOMAIN hoạt động!</h1>" > "$SITE_DIR/index.html"
 
-    # Tạo config Nginx
     CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN"
     cat > "$CONFIG_FILE" <<EOF
 server {
@@ -57,20 +62,21 @@ server {
 }
 EOF
 
-    ln -s "$CONFIG_FILE" /etc/nginx/sites-enabled/
+    ln -sf "$CONFIG_FILE" /etc/nginx/sites-enabled/
     nginx -t && systemctl reload nginx
-
     echo -e "${GREEN}✅ Website $DOMAIN đã được tạo!${NC}"
 
-    # SSL
     read -p "🔐 Cài SSL cho $DOMAIN? (y/n): " SSL_CONFIRM
     if [[ "$SSL_CONFIRM" == "y" ]]; then
-        certbot --nginx --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
-        echo -e "${GREEN}🔒 SSL đã cài thành công cho $DOMAIN${NC}"
+        certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
+        if [[ $? -eq 0 ]]; then
+            echo -e "${GREEN}🔒 SSL đã cài thành công cho $DOMAIN${NC}"
+        else
+            echo -e "${RED}❌ Cài SSL thất bại. Vui lòng kiểm tra cấu hình hoặc kết nối.${NC}"
+        fi
     fi
 }
 
-# ──────────────── BACKUP WEBSITE ────────────────
 backup_website() {
     read -p "💾 Nhập domain cần backup: " DOMAIN
     ZIP_FILE="${DOMAIN}_backup_$(date +%F).zip"
@@ -78,7 +84,6 @@ backup_website() {
     echo -e "${GREEN}✅ Backup hoàn tất: $ZIP_FILE${NC}"
 }
 
-# ──────────────── XÓA WEBSITE ────────────────
 remove_website() {
     read -p "⚠ Nhập domain cần xoá: " DOMAIN
     rm -rf "$WWW_DIR/$DOMAIN"
@@ -88,42 +93,47 @@ remove_website() {
     echo -e "${RED}🗑 Website $DOMAIN đã bị xoá${NC}"
 }
 
-# ──────────────── THÔNG TIN HỆ THỐNG ────────────────
+list_websites() {
+    echo -e "\n🌐 Danh sách website đã cài:"
+    ls /etc/nginx/sites-available 2>/dev/null || echo "(Không có site nào)"
+    echo
+}
+
 info_dakdo() {
     echo "📦 DAKDO Web Manager v$DAKDO_VERSION"
     echo "🌍 IP VPS: $(curl -s ifconfig.me)"
     echo "📁 Web Root: $WWW_DIR"
     echo "📧 Email SSL: $EMAIL"
+    echo "📅 SSL tự động gia hạn: 03:00 hàng ngày"
 }
 
-# ──────────────── MENU CHÍNH ────────────────
 menu_dakdo() {
     clear
-    echo -e "${GREEN}╔══════════════════════════════════╗"
-    echo -e "║       DAKDO WEB MANAGER v$DAKDO_VERSION    ║"
-    echo -e "╚══════════════════════════════════╝${NC}"
+    echo -e "${GREEN}╔══════════════════════════════════════╗"
+    echo -e "║       DAKDO WEB MANAGER v$DAKDO_VERSION       ║"
+    echo -e "╚══════════════════════════════════════╝${NC}"
     echo "1. Cài đặt DAKDO (Nginx + SSL tool)"
     echo "2. Thêm Website HTML mới"
     echo "3. Backup Website"
     echo "4. Xoá Website"
     echo "5. Kiểm tra Domain"
-    echo "6. Thông tin hệ thống"
-    echo "7. Thoát"
-    read -p "→ Chọn thao tác (1-7): " CHOICE
-
+    echo "6. Danh sách Website đã cài"
+    echo "7. Thông tin hệ thống"
+    echo "8. Thoát"
+    read -p "→ Chọn thao tác (1-8): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
         3) backup_website ;;
         4) remove_website ;;
         5) read -p "🌐 Nhập domain để kiểm tra: " DOMAIN && check_domain "$DOMAIN" ;;
-        6) info_dakdo ;;
-        7) exit 0 ;;
+        6) list_websites ;;
+        7) info_dakdo ;;
+        8) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
 }
 
-# ──────────────── LẶP MENU ────────────────
 while true; do
     menu_dakdo
     read -p "Nhấn Enter để tiếp tục..." pause
