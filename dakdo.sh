@@ -248,9 +248,42 @@ backup_all_static_sites() {
     done
 }
 
+
 restore_static_site() {
     echo "📂 Danh sách file backup:"
     ls /root/backups/*.zip 2>/dev/null || { echo "⚠ Không tìm thấy file backup."; read; return; }
+
+    read -p "Nhập tên file .zip cần khôi phục (không có path): " ZIP_FILE
+    FULL_PATH="/root/backups/$ZIP_FILE"
+
+    if [[ ! -f "$FULL_PATH" ]]; then
+        echo "❌ File không tồn tại: $ZIP_FILE"
+        return
+    fi
+
+    TMP_DIR="/tmp/restore_$(date +%s)"
+    mkdir -p "$TMP_DIR"
+    unzip -q "$FULL_PATH" -d "$TMP_DIR"
+
+    # Tìm thư mục con đầu tiên trong file zip (nếu có)
+    FIRST_SUBDIR=$(find "$TMP_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+    if [[ -z "$FIRST_SUBDIR" ]]; then
+        echo "❌ Không tìm thấy thư mục website trong file zip."
+        rm -rf "$TMP_DIR"
+        return
+    fi
+
+    DOMAIN=$(basename "$FIRST_SUBDIR")
+    TARGET_DIR="/var/www/$DOMAIN"
+
+    echo "🔁 Đang khôi phục vào: $TARGET_DIR"
+    rm -rf "$TARGET_DIR"
+    mv "$FIRST_SUBDIR" "$TARGET_DIR"
+    chown -R www-data:www-data "$TARGET_DIR"
+    rm -rf "$TMP_DIR"
+
+    echo "✅ Đã khôi phục website tĩnh: $DOMAIN"
+}
 
     read -p "Nhập tên file .zip cần khôi phục (không có path): " ZIP_FILE
     FULL_PATH="/root/backups/$ZIP_FILE"
