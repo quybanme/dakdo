@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v1.8 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v1.9 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.8"
+DAKDO_VERSION="1.9"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -264,8 +264,8 @@ menu_dakdo() {
     echo "8. Thông tin hệ thống"
     echo "9. Khôi phục Website từ Backup (.zip)"
     echo "10. Hướng dẫn tải file Backup lên VPS"
-    echo "11. Thoát"
-    read -p "→ Chọn thao tác (1-11): " CHOICE
+    echo "0. Thoát"
+    read -p "→ Chọn thao tác (0-10): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -284,7 +284,7 @@ menu_dakdo() {
         8) info_dakdo ;;
         9) restore_website ;;
         10) upload_instructions ;;
-        11) exit 0 ;;
+        0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
 }
