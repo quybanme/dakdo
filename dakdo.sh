@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v1.7 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v1.8 – Web Manager for HTML + SSL + Backup + Restore (auto-fix folder nesting)
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.7"
+DAKDO_VERSION="1.8"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -135,22 +135,6 @@ EOF
     fi
 }
 
-ssl_manual() {
-    read -p "🔐 Nhập domain để cài/gia hạn SSL (nhập 0 để quay lại): " DOMAIN
-    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-        return
-    fi
-    check_domain "$DOMAIN" || return
-    echo -e "${YELLOW}⚠️ Hãy tắt đám mây vàng (Proxy) trên Cloudflare trước khi cài/gia hạn SSL.${NC}"
-    certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
-    if [[ $? -eq 0 ]]; then
-        echo -e "${GREEN}🔒 SSL đã cài/gia hạn thành công cho $DOMAIN${NC}"
-    else
-        echo -e "${RED}❌ Cài/gia hạn SSL thất bại. Vui lòng kiểm tra cấu hình hoặc kết nối.${NC}"
-    fi
-}
-
 backup_website() {
     read -p "💾 Nhập domain cần backup (hoặc * để backup tất cả, 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
@@ -196,18 +180,33 @@ restore_website() {
     mkdir -p "$RESTORE_DIR"
 
     unzip -oq "$ZIP_PATH" -d "$RESTORE_DIR"
-    echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
+
+    # ✅ Tự động xử lý nếu bị lồng thư mục trùng tên domain
+    if [ -d "$RESTORE_DIR/$DOMAIN" ]; then
+        echo -e "${YELLOW}🔁 Đang xử lý cấu trúc thư mục lồng nhau...${NC}"
+        mv "$RESTORE_DIR/$DOMAIN"/* "$RESTORE_DIR/"
+        rm -r "$RESTORE_DIR/$DOMAIN"
+        echo -e "${GREEN}✅ Đã tự động gỡ bỏ thư mục lồng và sắp xếp lại.${NC}"
+    fi
+
     systemctl reload nginx
+    echo -e "${GREEN}✅ Website $DOMAIN đã được khôi phục từ $ZIP_FILE${NC}"
 }
 
-upload_instructions() {
-    echo -e "${GREEN}📤 Hướng dẫn tải file .zip lên VPS để khôi phục website:${NC}"
-    echo -e "1️⃣ Trên máy tính, mở Terminal hoặc CMD (có hỗ trợ scp)"
-    echo -e "2️⃣ Chạy lệnh sau để upload file .zip lên VPS:\n"
-    echo -e "   ${YELLOW}scp ten_file_backup.zip root@$(curl -s ifconfig.me):/root/backups/${NC}\n"
-    echo -e "💡 Ví dụ:"
-    echo -e "   scp ~/Downloads/ten_file.zip root@$(curl -s ifconfig.me):/root/backups/"
-    echo -e "💬 Sau khi tải lên, quay lại menu và chọn mục 'Khôi phục Website' để tiến hành."
+ssl_manual() {
+    read -p "🔐 Nhập domain để cài/gia hạn SSL (nhập 0 để quay lại): " DOMAIN
+    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return
+    fi
+    check_domain "$DOMAIN" || return
+    echo -e "${YELLOW}⚠️ Hãy tắt đám mây vàng (Proxy) trên Cloudflare trước khi cài/gia hạn SSL.${NC}"
+    certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
+    if [[ $? -eq 0 ]]; then
+        echo -e "${GREEN}🔒 SSL đã cài/gia hạn thành công cho $DOMAIN${NC}"
+    else
+        echo -e "${RED}❌ Cài/gia hạn SSL thất bại. Vui lòng kiểm tra cấu hình hoặc kết nối.${NC}"
+    fi
 }
 
 remove_website() {
@@ -235,6 +234,16 @@ info_dakdo() {
     echo "📁 Web Root: $WWW_DIR"
     echo "📧 Email SSL: $EMAIL"
     echo "📅 SSL tự động gia hạn: 03:00 hàng ngày"
+}
+
+upload_instructions() {
+    echo -e "${GREEN}📤 Hướng dẫn tải file .zip lên VPS để khôi phục website:${NC}"
+    echo -e "1️⃣ Trên máy tính, mở Terminal hoặc CMD (có hỗ trợ scp)"
+    echo -e "2️⃣ Chạy lệnh sau để upload file .zip lên VPS:\n"
+    echo -e "   ${YELLOW}scp ten_file_backup.zip root@$(curl -s ifconfig.me):/root/backups/${NC}\n"
+    echo -e "💡 Ví dụ:"
+    echo -e "   scp ~/Downloads/ten_file.zip root@$(curl -s ifconfig.me):/root/backups/"
+    echo -e "💬 Sau khi tải lên, quay lại menu và chọn mục 'Khôi phục Website' để tiến hành."
 }
 
 menu_dakdo() {
