@@ -2,9 +2,10 @@
 # dakdo.sh - Script quản lý VPS dành cho website tĩnh HTML
 
 GREEN='\033[0;32m'
+RED='\033[1;31m'
 NC='\033[0m'
 
-echo -e "${GREEN}DAKDO VPS MANAGER - v1.2${NC}"
+echo -e "${GREEN}DAKDO VPS MANAGER - v1.3${NC}"
 echo "=========================="
 echo "1. Cập nhật hệ thống"
 echo "2. Cài Nginx"
@@ -32,8 +33,16 @@ case "$choice" in
     ;;
   4)
     read -p "Nhập tên domain (không có http/https): " domain
-    webroot="/var/www/$domain"
+    IP_VPS=$(curl -s https://api.ipify.org)
+    IP_DOMAIN=$(dig +short "$domain" | tail -n1)
 
+    if [[ "$IP_DOMAIN" != "$IP_VPS" ]]; then
+      echo -e "${RED}[CẢNH BÁO] Domain $domain chưa trỏ về IP VPS ($IP_VPS)${NC}"
+      read -p "Bạn vẫn muốn tiếp tục tạo website? (y/n): " continue
+      [[ "$continue" != "y" ]] && exit
+    fi
+
+    webroot="/var/www/$domain"
     echo -e "${GREEN}Đang tạo thư mục website...${NC}"
     mkdir -p "$webroot"
     chown -R www-data:www-data "$webroot"
@@ -62,6 +71,14 @@ EOF
     ;;
   5)
     read -p "Nhập tên domain cần cài SSL (không có http/https): " domain
+    IP_VPS=$(curl -s https://api.ipify.org)
+    IP_DOMAIN=$(dig +short "$domain" | tail -n1)
+
+    if [[ "$IP_DOMAIN" != "$IP_VPS" ]]; then
+      echo -e "${RED}[CẢNH BÁO] Domain $domain chưa trỏ về IP VPS ($IP_VPS)${NC}"
+      read -p "Bạn vẫn muốn tiếp tục cài SSL? (y/n): " continue
+      [[ "$continue" != "y" ]] && exit
+    fi
 
     echo -e "${GREEN}Đang cài đặt Certbot và plugin Nginx...${NC}"
     apt install certbot python3-certbot-nginx -y
