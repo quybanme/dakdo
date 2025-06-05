@@ -1,7 +1,6 @@
-
 #!/bin/bash
 
-# DAKDO v1.5 – Web Manager for HTML + SSL (Gọn gàng, loại bỏ mục redirect riêng)
+# DAKDO v1.5 – Web Manager for HTML + SSL (Gọn gàng, bổ sung backup toàn bộ website)
 # Author: @quybanme – https://github.com/quybanme
 
 DAKDO_VERSION="1.5"
@@ -153,17 +152,30 @@ ssl_manual() {
 }
 
 backup_website() {
-    read -p "💾 Nhập domain cần backup (nhập 0 để quay lại): " DOMAIN
+    read -p "💾 Nhập domain cần backup (hoặc * để backup tất cả, 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
     BACKUP_DIR="/root/backups"
     mkdir -p "$BACKUP_DIR"
-    ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
-    zip -r "$ZIP_FILE" "$WWW_DIR/$DOMAIN"
-    echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
-    du -h "$ZIP_FILE"
+
+    if [[ "$DOMAIN" == "*" ]]; then
+        echo -e "${GREEN}🔁 Đang tiến hành backup tất cả website...${NC}"
+        for DIR in "$WWW_DIR"/*; do
+            if [ -d "$DIR" ]; then
+                SITE_NAME=$(basename "$DIR")
+                ZIP_FILE="$BACKUP_DIR/${SITE_NAME}_backup_$(date +%F).zip"
+                zip -rq "$ZIP_FILE" "$DIR"
+                echo -e "✅ Đã backup $SITE_NAME → $(realpath "$ZIP_FILE")"
+            fi
+        done
+    else
+        ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
+        zip -rq "$ZIP_FILE" "$WWW_DIR/$DOMAIN"
+        echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
+        du -h "$ZIP_FILE"
+    fi
 }
 
 remove_website() {
