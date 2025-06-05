@@ -20,8 +20,8 @@ check_domain() {
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return 1
     fi
-    DOMAIN_IP=$(dig +short "$DOMAIN" | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -1)
-    SERVER_IP=$(curl -s ifconfig.me)
+    DOMAIN_IP=$(dig +short A "$DOMAIN" | head -1)
+    SERVER_IP=$(curl -s https://api.ipify.org)
     if [ "$DOMAIN_IP" = "$SERVER_IP" ]; then
         echo -e "${GREEN}✔ Domain $DOMAIN đã trỏ đúng IP ($SERVER_IP)${NC}"
         return 0
@@ -42,7 +42,7 @@ install_base() {
         systemctl start nginx
     fi
 
-    if ! crontab -l | grep -q 'certbot renew'; then
+    if ! crontab -l 2>/dev/null | grep -q 'certbot renew'; then
         (crontab -l 2>/dev/null; echo "0 3 * * * /usr/bin/certbot renew --quiet") | crontab -
         echo "✅ Đã thêm cron tự động gia hạn SSL"
     fi
@@ -120,17 +120,19 @@ EOF
             ;;
     esac
 
-    [ -L /etc/nginx/sites-enabled/$DOMAIN ] || ln -s "$CONFIG_FILE" /etc/nginx/sites-enabled/
+    ln -sf "$CONFIG_FILE" "/etc/nginx/sites-enabled/$DOMAIN"
     nginx -t && systemctl reload nginx
     echo -e "${GREEN}✅ Website $DOMAIN đã được tạo!${NC}"
 
     read -p "🔐 Cài SSL cho $DOMAIN? (y/n): " SSL_CONFIRM
     if [[ "$SSL_CONFIRM" == "y" ]]; then
-        certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
-        if [[ $? -eq 0 ]]; then
-            echo -e "${GREEN}🔒 SSL đã cài thành công cho $DOMAIN${NC}"
-        else
-            echo -e "${RED}❌ Cài SSL thất bại. Vui lòng kiểm tra cấu hình hoặc kết nối.${NC}"
+        if check_domain "$DOMAIN"; then
+            certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
+            if [[ $? -eq 0 ]]; then
+                echo -e "${GREEN}🔒 SSL đã cài thành công cho $DOMAIN${NC}"
+            else
+                echo -e "${RED}❌ Cài SSL thất bại. Vui lòng kiểm tra cấu hình hoặc kết nối.${NC}"
+            fi
         fi
     fi
 }
@@ -166,13 +168,13 @@ backup_website() {
             if [ -d "$DIR" ]; then
                 SITE_NAME=$(basename "$DIR")
                 ZIP_FILE="$BACKUP_DIR/${SITE_NAME}_backup_$(date +%F).zip"
-                zip -rq "$ZIP_FILE" "$DIR"
+                (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$SITE_NAME")
                 echo -e "✅ Đã backup $SITE_NAME → $(realpath "$ZIP_FILE")"
             fi
         done
     else
         ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
-        zip -rq "$ZIP_FILE" "$WWW_DIR/$DOMAIN"
+        (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$DOMAIN")
         echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
         du -h "$ZIP_FILE"
     fi
@@ -195,18 +197,18 @@ restore_website() {
     RESTORE_DIR="$WWW_DIR/$DOMAIN"
     mkdir -p "$RESTORE_DIR"
 
-    unzip -oq "$ZIP_PATH" -d "$RESTORE_DIR"
+    unzip -oq "$ZIP_PATH" -d "$WWW_DIR"
     echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
-    systemctl reload nginx
+    nginx -t && systemctl reload nginx
 }
 
 upload_instructions() {
     echo -e "${GREEN}📤 Hướng dẫn tải file .zip lên VPS để khôi phục website:${NC}"
     echo -e "1️⃣ Trên máy tính, mở Terminal hoặc CMD (có hỗ trợ scp)"
     echo -e "2️⃣ Chạy lệnh sau để upload file .zip lên VPS:\n"
-    echo -e "   ${YELLOW}scp ten_file_backup.zip root@$(curl -s ifconfig.me):/root/backups/${NC}\n"
+    echo -e "   ${YELLOW}scp ten_file_backup.zip root@$(curl -s https://api.ipify.org):/root/backups/${NC}\n"
     echo -e "💡 Ví dụ:"
-    echo -e "   scp ~/Downloads/ten_file.zip root@$(curl -s ifconfig.me):/root/backups/"
+    echo -e "   scp ~/Downloads/ten_file.zip root@$(curl -s https://api.ipify.org):/root/backups/"
     echo -e "💬 Sau khi tải lên, quay lại menu và chọn mục 'Khôi phục Website' để tiến hành."
 }
 
@@ -231,7 +233,7 @@ list_websites() {
 
 info_dakdo() {
     echo "📦 DAKDO Web Manager v$DAKDO_VERSION"
-    echo "🌍 IP VPS: $(curl -s ifconfig.me)"
+    echo "🌍 IP VPS: $(curl -s https://api.ipify.org)"
     echo "📁 Web Root: $WWW_DIR"
     echo "📧 Email SSL: $EMAIL"
     echo "📅 SSL tự động gia hạn: 03:00 hàng ngày"
