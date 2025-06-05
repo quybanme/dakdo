@@ -252,7 +252,7 @@ info_dakdo() {
 menu_dakdo() {
     clear
     echo -e "${GREEN}╔══════════════════════════════════════╗"
-    echo -e "║    ^^   DAKDO WEB MANAGER v$DAKDO_VERSION   ^^     ║"
+    echo -e "║       DAKDO WEB MANAGER v$DAKDO_VERSION        ║"
     echo -e "╚══════════════════════════════════════╝${NC}"
     echo "1. Cài đặt DAKDO (Nginx + SSL + Firewall)"
     echo "2. Thêm Website HTML mới"
