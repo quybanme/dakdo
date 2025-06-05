@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v1.3 – Web Manager for HTML + SSL (Upgraded)
+# DAKDO v1.4 – Web Manager for HTML + SSL (Redirect Support)
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.3"
+DAKDO_VERSION="1.4"
 WWW_DIR="/var/www"
 EMAIL="admin@dakdo.vn"
 GREEN="\e[32m"
@@ -11,7 +11,6 @@ RED="\e[31m"
 YELLOW="\e[33m"
 NC="\e[0m"
 
-# Ensure required directories
 mkdir -p /etc/nginx/sites-available
 mkdir -p /etc/nginx/sites-enabled
 
@@ -43,7 +42,6 @@ install_base() {
         systemctl start nginx
     fi
 
-    # Setup auto-renew SSL
     if ! crontab -l | grep -q 'certbot renew'; then
         (crontab -l 2>/dev/null; echo "0 3 * * * /usr/bin/certbot renew --quiet") | crontab -
         echo "✅ Đã thêm cron tự động gia hạn SSL"
@@ -63,19 +61,64 @@ add_website() {
         echo "<h1>DAKDO - Website $DOMAIN hoạt động!</h1>" > "$SITE_DIR/index.html"
     fi
 
+    echo "🔁 Chọn kiểu chuyển hướng domain:"
+    echo "1. non-www → www (Khuyến nghị)"
+    echo "2. www → non-www"
+    echo "3. Không chuyển hướng"
+    read -p "→ Lựa chọn (1-3): " REDIRECT_TYPE
+
     CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN"
-    cat > "$CONFIG_FILE" <<EOF
+    case $REDIRECT_TYPE in
+        1)
+            cat > "$CONFIG_FILE" <<EOF
 server {
     listen 80;
-    server_name $DOMAIN www.$DOMAIN;
+    server_name $DOMAIN;
+    return 301 http://www.$DOMAIN\$request_uri;
+}
+server {
+    listen 80;
+    server_name www.$DOMAIN;
     root $SITE_DIR;
     index index.html;
-
     location / {
         try_files \$uri \$uri/ =404;
     }
 }
 EOF
+            ;;
+        2)
+            cat > "$CONFIG_FILE" <<EOF
+server {
+    listen 80;
+    server_name www.$DOMAIN;
+    return 301 http://$DOMAIN\$request_uri;
+}
+server {
+    listen 80;
+    server_name $DOMAIN;
+    root $SITE_DIR;
+    index index.html;
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+            ;;
+        *)
+            cat > "$CONFIG_FILE" <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+    root $SITE_DIR;
+    index index.html;
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+            ;;
+    esac
 
     [ -L /etc/nginx/sites-enabled/$DOMAIN ] || ln -s "$CONFIG_FILE" /etc/nginx/sites-enabled/
     nginx -t && systemctl reload nginx
@@ -90,6 +133,83 @@ EOF
             echo -e "${RED}❌ Cài SSL thất bại. Vui lòng kiểm tra cấu hình hoặc kết nối.${NC}"
         fi
     fi
+}
+
+set_redirect() {
+    read -p "🌐 Nhập domain cần cấu hình redirect (nhập 0 để quay lại): " DOMAIN
+    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return
+    fi
+
+    CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN"
+    SITE_DIR="$WWW_DIR/$DOMAIN"
+
+    if [ ! -d "$SITE_DIR" ] || [ ! -f "$CONFIG_FILE" ]; then
+        echo -e "${RED}❌ Website $DOMAIN chưa tồn tại.${NC}"
+        return
+    fi
+
+    echo "🔁 Chọn kiểu chuyển hướng domain:"
+    echo "1. non-www → www (Khuyến nghị)"
+    echo "2. www → non-www"
+    echo "3. Không chuyển hướng"
+    read -p "→ Lựa chọn (1-3): " REDIRECT_TYPE
+
+    case $REDIRECT_TYPE in
+        1)
+            cat > "$CONFIG_FILE" <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN;
+    return 301 http://www.$DOMAIN\$request_uri;
+}
+server {
+    listen 80;
+    server_name www.$DOMAIN;
+    root $SITE_DIR;
+    index index.html;
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+            ;;
+        2)
+            cat > "$CONFIG_FILE" <<EOF
+server {
+    listen 80;
+    server_name www.$DOMAIN;
+    return 301 http://$DOMAIN\$request_uri;
+}
+server {
+    listen 80;
+    server_name $DOMAIN;
+    root $SITE_DIR;
+    index index.html;
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+            ;;
+        *)
+            cat > "$CONFIG_FILE" <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+    root $SITE_DIR;
+    index index.html;
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+            ;;
+    esac
+
+    nginx -t && systemctl reload nginx
+    echo -e "${GREEN}✅ Cập nhật chuyển hướng cho $DOMAIN thành công!${NC}"
 }
 
 ssl_manual() {
@@ -162,8 +282,9 @@ menu_dakdo() {
     echo "6. Danh sách Website đã cài"
     echo "7. Cài / Gia hạn SSL cho Website"
     echo "8. Thông tin hệ thống"
-    echo "9. Thoát"
-    read -p "→ Chọn thao tác (1-9): " CHOICE
+    echo "9. Thiết lập chuyển hướng www/non-www"
+    echo "10. Thoát"
+    read -p "→ Chọn thao tác (1-10): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -180,7 +301,8 @@ menu_dakdo() {
         6) list_websites ;;
         7) ssl_manual ;;
         8) info_dakdo ;;
-        9) exit 0 ;;
+        9) set_redirect ;;
+        10) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
 }
