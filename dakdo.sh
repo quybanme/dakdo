@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v1.5 – Web Manager for HTML + SSL (Gọn gàng, bổ sung backup toàn bộ website)
+# DAKDO v1.7 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.5"
+DAKDO_VERSION="1.7"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -142,7 +142,7 @@ ssl_manual() {
         return
     fi
     check_domain "$DOMAIN" || return
-    echo -e "${YELLOW}⚠️ Lưu ý: Hãy tắt đám mây vàng (Proxy) trên Cloudflare trước khi cài/gia hạn SSL.${NC}"
+    echo -e "${YELLOW}⚠️ Hãy tắt đám mây vàng (Proxy) trên Cloudflare trước khi cài/gia hạn SSL.${NC}"
     certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
     if [[ $? -eq 0 ]]; then
         echo -e "${GREEN}🔒 SSL đã cài/gia hạn thành công cho $DOMAIN${NC}"
@@ -176,6 +176,38 @@ backup_website() {
         echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
         du -h "$ZIP_FILE"
     fi
+}
+
+restore_website() {
+    BACKUP_DIR="/root/backups"
+    echo -e "📦 Danh sách file backup có sẵn:"
+    ls "$BACKUP_DIR"/*.zip 2>/dev/null || { echo "❌ Không tìm thấy file backup."; return; }
+
+    read -p "🗂 Nhập tên file backup cần khôi phục (vd: domain_backup_2025-06-05.zip): " ZIP_FILE
+    ZIP_PATH="$BACKUP_DIR/$ZIP_FILE"
+
+    if [ ! -f "$ZIP_PATH" ]; then
+        echo -e "${RED}❌ File không tồn tại: $ZIP_PATH${NC}"
+        return
+    fi
+
+    DOMAIN=$(echo "$ZIP_FILE" | cut -d'_' -f1)
+    RESTORE_DIR="$WWW_DIR/$DOMAIN"
+    mkdir -p "$RESTORE_DIR"
+
+    unzip -oq "$ZIP_PATH" -d "$RESTORE_DIR"
+    echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
+    systemctl reload nginx
+}
+
+upload_instructions() {
+    echo -e "${GREEN}📤 Hướng dẫn tải file .zip lên VPS để khôi phục website:${NC}"
+    echo -e "1️⃣ Trên máy tính, mở Terminal hoặc CMD (có hỗ trợ scp)"
+    echo -e "2️⃣ Chạy lệnh sau để upload file .zip lên VPS:\n"
+    echo -e "   ${YELLOW}scp ten_file_backup.zip root@$(curl -s ifconfig.me):/root/backups/${NC}\n"
+    echo -e "💡 Ví dụ:"
+    echo -e "   scp ~/Downloads/ten_file.zip root@$(curl -s ifconfig.me):/root/backups/"
+    echo -e "💬 Sau khi tải lên, quay lại menu và chọn mục 'Khôi phục Website' để tiến hành."
 }
 
 remove_website() {
@@ -218,8 +250,10 @@ menu_dakdo() {
     echo "6. Danh sách Website đã cài"
     echo "7. Cài / Gia hạn SSL cho Website"
     echo "8. Thông tin hệ thống"
-    echo "9. Thoát"
-    read -p "→ Chọn thao tác (1-9): " CHOICE
+    echo "9. Khôi phục Website từ Backup (.zip)"
+    echo "10. Hướng dẫn tải file Backup lên VPS"
+    echo "11. Thoát"
+    read -p "→ Chọn thao tác (1-11): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -236,7 +270,9 @@ menu_dakdo() {
         6) list_websites ;;
         7) ssl_manual ;;
         8) info_dakdo ;;
-        9) exit 0 ;;
+        9) restore_website ;;
+        10) upload_instructions ;;
+        11) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
 }
