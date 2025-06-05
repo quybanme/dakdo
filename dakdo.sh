@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v1.7 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v1.8 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.7"
+DAKDO_VERSION="1.8"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -37,10 +37,15 @@ install_base() {
     else
         echo -e "${GREEN}🔧 Cài đặt Nginx, Certbot và công cụ hỗ trợ...${NC}"
         apt update -y
-        apt install nginx certbot python3-certbot-nginx zip unzip curl dnsutils -y
+        apt install nginx certbot python3-certbot-nginx zip unzip curl dnsutils ufw -y
         systemctl enable nginx
         systemctl start nginx
     fi
+
+    echo -e "${GREEN}📖 Cấu hình Firewall (UFW): Mở cổng 80 và 443...${NC}"
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw --force enable
 
     if ! crontab -l 2>/dev/null | grep -q 'certbot renew'; then
         (crontab -l 2>/dev/null; echo "0 3 * * * /usr/bin/certbot renew --quiet") | crontab -
@@ -185,7 +190,7 @@ restore_website() {
     echo -e "📦 Danh sách file backup có sẵn:"
     ls "$BACKUP_DIR"/*.zip 2>/dev/null || { echo "❌ Không tìm thấy file backup."; return; }
 
-    read -p "🗂 Nhập tên file backup cần khôi phục (vd: domain_backup_2025-06-05.zip): " ZIP_FILE
+    read -p "🗂 Nhập tên file backup cần khôi phục (vd: domain_backup_2025-06-06.zip): " ZIP_FILE
     ZIP_PATH="$BACKUP_DIR/$ZIP_FILE"
 
     if [ ! -f "$ZIP_PATH" ]; then
@@ -216,6 +221,11 @@ remove_website() {
     read -p "⚠ Nhập domain cần xoá (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return
+    fi
+    read -p "❓ Bạn có chắc muốn xoá $DOMAIN? (gõ 'yes' để xác nhận): " CONFIRM
+    if [[ "$CONFIRM" != "yes" ]]; then
+        echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
         return
     fi
     rm -rf "$WWW_DIR/$DOMAIN"
