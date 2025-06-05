@@ -1,11 +1,12 @@
+
 #!/bin/bash
 
-# DAKDO v1.4 – Web Manager for HTML + SSL (Redirect Support)
+# DAKDO v1.5 – Web Manager for HTML + SSL (Gọn gàng, loại bỏ mục redirect riêng)
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.4"
+DAKDO_VERSION="1.5"
 WWW_DIR="/var/www"
-EMAIL="admin@dakdo.vn"
+EMAIL="i@dakdo.com"
 GREEN="\e[32m"
 RED="\e[31m"
 YELLOW="\e[33m"
@@ -62,7 +63,7 @@ add_website() {
     fi
 
     echo "🔁 Chọn kiểu chuyển hướng domain:"
-    echo "1. non-www → www (Khuyến nghị)"
+    echo "1. non-www → www"
     echo "2. www → non-www"
     echo "3. Không chuyển hướng"
     read -p "→ Lựa chọn (1-3): " REDIRECT_TYPE
@@ -135,83 +136,6 @@ EOF
     fi
 }
 
-set_redirect() {
-    read -p "🌐 Nhập domain cần cấu hình redirect (nhập 0 để quay lại): " DOMAIN
-    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-        return
-    fi
-
-    CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN"
-    SITE_DIR="$WWW_DIR/$DOMAIN"
-
-    if [ ! -d "$SITE_DIR" ] || [ ! -f "$CONFIG_FILE" ]; then
-        echo -e "${RED}❌ Website $DOMAIN chưa tồn tại.${NC}"
-        return
-    fi
-
-    echo "🔁 Chọn kiểu chuyển hướng domain:"
-    echo "1. non-www → www (Khuyến nghị)"
-    echo "2. www → non-www"
-    echo "3. Không chuyển hướng"
-    read -p "→ Lựa chọn (1-3): " REDIRECT_TYPE
-
-    case $REDIRECT_TYPE in
-        1)
-            cat > "$CONFIG_FILE" <<EOF
-server {
-    listen 80;
-    server_name $DOMAIN;
-    return 301 http://www.$DOMAIN\$request_uri;
-}
-server {
-    listen 80;
-    server_name www.$DOMAIN;
-    root $SITE_DIR;
-    index index.html;
-    location / {
-        try_files \$uri \$uri/ =404;
-    }
-}
-EOF
-            ;;
-        2)
-            cat > "$CONFIG_FILE" <<EOF
-server {
-    listen 80;
-    server_name www.$DOMAIN;
-    return 301 http://$DOMAIN\$request_uri;
-}
-server {
-    listen 80;
-    server_name $DOMAIN;
-    root $SITE_DIR;
-    index index.html;
-    location / {
-        try_files \$uri \$uri/ =404;
-    }
-}
-EOF
-            ;;
-        *)
-            cat > "$CONFIG_FILE" <<EOF
-server {
-    listen 80;
-    server_name $DOMAIN www.$DOMAIN;
-    root $SITE_DIR;
-    index index.html;
-    location / {
-        try_files \$uri \$uri/ =404;
-    }
-}
-EOF
-            ;;
-    esac
-
-    nginx -t && systemctl reload nginx
-    echo -e "${GREEN}✅ Cập nhật chuyển hướng cho $DOMAIN thành công!${NC}"
-}
-
 ssl_manual() {
     read -p "🔐 Nhập domain để cài/gia hạn SSL (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
@@ -282,9 +206,8 @@ menu_dakdo() {
     echo "6. Danh sách Website đã cài"
     echo "7. Cài / Gia hạn SSL cho Website"
     echo "8. Thông tin hệ thống"
-    echo "9. Thiết lập chuyển hướng www/non-www"
-    echo "10. Thoát"
-    read -p "→ Chọn thao tác (1-10): " CHOICE
+    echo "9. Thoát"
+    read -p "→ Chọn thao tác (1-9): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -301,8 +224,7 @@ menu_dakdo() {
         6) list_websites ;;
         7) ssl_manual ;;
         8) info_dakdo ;;
-        9) set_redirect ;;
-        10) exit 0 ;;
+        9) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
 }
