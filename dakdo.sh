@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v1.7 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v1.8 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.7"
+DAKDO_VERSION="1.8"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -193,12 +193,8 @@ restore_website() {
         return
     fi
 
-    DOMAIN=$(echo "$ZIP_FILE" | cut -d'_' -f1)
-    RESTORE_DIR="$WWW_DIR/$DOMAIN"
-    mkdir -p "$RESTORE_DIR"
-
     unzip -oq "$ZIP_PATH" -d "$WWW_DIR"
-    echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
+    echo -e "${GREEN}✅ Đã khôi phục website từ $ZIP_FILE${NC}"
     nginx -t && systemctl reload nginx
 }
 
@@ -223,6 +219,41 @@ remove_website() {
     rm -f "/etc/nginx/sites-available/$DOMAIN"
     nginx -t && systemctl reload nginx
     echo -e "${RED}🗑 Website $DOMAIN đã bị xoá${NC}"
+}
+
+pause_site() {
+    read -p "⏸ Nhập domain cần tạm dừng (nhập 0 để quay lại): " DOMAIN
+    if [[ "$DOMAIN" == "0" || -z "$DOMAIN" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"; return
+    fi
+    LINK="/etc/nginx/sites-enabled/$DOMAIN"
+    if [ -L "$LINK" ]; then
+        rm -f "$LINK"
+        nginx -t && systemctl reload nginx
+        echo -e "${YELLOW}🛑 Đã tạm dừng website: $DOMAIN${NC}"
+    else
+        echo -e "${RED}❗ Website $DOMAIN đã được tạm dừng trước đó hoặc chưa tồn tại.${NC}"
+    fi
+}
+
+resume_site() {
+    read -p "▶ Nhập domain cần kích hoạt lại (nhập 0 để quay lại): " DOMAIN
+    if [[ "$DOMAIN" == "0" || -z "$DOMAIN" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"; return
+    fi
+    CONF="/etc/nginx/sites-available/$DOMAIN"
+    LINK="/etc/nginx/sites-enabled/$DOMAIN"
+    if [ -f "$CONF" ]; then
+        if [ -L "$LINK" ]; then
+            echo -e "${GREEN}✅ Website $DOMAIN đang hoạt động rồi.${NC}"
+        else
+            ln -s "$CONF" "$LINK"
+            nginx -t && systemctl reload nginx
+            echo -e "${GREEN}✅ Đã kích hoạt lại website: $DOMAIN${NC}"
+        fi
+    else
+        echo -e "${RED}❌ Cấu hình $DOMAIN không tồn tại. Không thể kích hoạt.${NC}"
+    fi
 }
 
 list_websites() {
@@ -255,7 +286,9 @@ menu_dakdo() {
     echo "9. Khôi phục Website từ Backup (.zip)"
     echo "10. Hướng dẫn tải file Backup lên VPS"
     echo "11. Thoát"
-    read -p "→ Chọn thao tác (1-11): " CHOICE
+    echo "12. Tạm dừng Website"
+    echo "13. Kích hoạt lại Website"
+    read -p "→ Chọn thao tác (1-13): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -275,6 +308,8 @@ menu_dakdo() {
         9) restore_website ;;
         10) upload_instructions ;;
         11) exit 0 ;;
+        12) pause_site ;;
+        13) resume_site ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
 }
