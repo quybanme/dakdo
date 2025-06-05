@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v1.9 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v2.0 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="1.9"
+DAKDO_VERSION="2.0"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -254,36 +254,32 @@ menu_dakdo() {
     echo -e "${GREEN}╔══════════════════════════════════════╗"
     echo -e "║       DAKDO WEB MANAGER v$DAKDO_VERSION       ║"
     echo -e "╚══════════════════════════════════════╝${NC}"
-    echo "1. Cài đặt DAKDO (Nginx + SSL tool)"
+    echo "1. Cài đặt DAKDO (Nginx + SSL + Firewall)"
     echo "2. Thêm Website HTML mới"
-    echo "3. Backup Website"
-    echo "4. Xoá Website"
-    echo "5. Kiểm tra Domain"
-    echo "6. Danh sách Website đã cài"
-    echo "7. Cài / Gia hạn SSL cho Website"
-    echo "8. Thông tin hệ thống"
-    echo "9. Khôi phục Website từ Backup (.zip)"
-    echo "10. Hướng dẫn tải file Backup lên VPS"
+    echo "3. Cài / Gia hạn SSL cho Website"
+    echo "4. Kiểm tra Domain"
+    echo "5. Danh sách Website đã cài"
+    echo "6. Backup Website"
+    echo "7. Khôi phục Website từ Backup (.zip)"
+    echo "8. Hướng dẫn tải file Backup lên VPS"
+    echo "9. Xoá Website"
+    echo "10. Thông tin hệ thống"
     echo "0. Thoát"
     read -p "→ Chọn thao tác (0-10): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
-        3) backup_website ;;
-        4) remove_website ;;
-        5)
+        3) ssl_manual ;;
+        4)
             read -p "🌐 Nhập domain để kiểm tra (nhập 0 để quay lại): " DOMAIN
-            if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
-                echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-            else
-                check_domain "$DOMAIN"
-            fi
+            [[ "$DOMAIN" != "0" && -n "$DOMAIN" ]] && check_domain "$DOMAIN"
             ;;
-        6) list_websites ;;
-        7) ssl_manual ;;
-        8) info_dakdo ;;
-        9) restore_website ;;
-        10) upload_instructions ;;
+        5) list_websites ;;
+        6) backup_website ;;
+        7) restore_website ;;
+        8) upload_instructions ;;
+        9) remove_website ;;
+        10) info_dakdo ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
