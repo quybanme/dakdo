@@ -64,7 +64,64 @@ validate_domain() {
         return 1
     fi
     # Check for dangerous characters
-    if [[ "$domain" =~ [;|&\$\`\\] ]]; then
+    if [[ "$domain" =~ [';|&#!/bin/bash
+
+# DAKDO v1.8 – Web Manager for HTML + SSL + Backup + Restore (Improved)
+# Author: @quybanme – https://github.com/quybanme
+# Improvements: Enhanced security, error handling, and stability
+
+DAKDO_VERSION="1.8"
+WWW_DIR="/var/www"
+EMAIL="i@dakdo.com"
+GREEN="\e[32m"
+RED="\e[31m"
+YELLOW="\e[33m"
+NC="\e[0m"
+LOCK_FILE="/tmp/dakdo.lock"
+LOG_FILE="/var/log/dakdo.log"
+BACKUP_DIR="/root/backups"
+
+# Create necessary directories
+mkdir -p /etc/nginx/sites-available
+mkdir -p /etc/nginx/sites-enabled
+mkdir -p "$BACKUP_DIR"
+
+# Logging function
+log_action() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S'): $1" >> "$LOG_FILE"
+}
+
+# Check if running as root
+check_root() {
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}❌ Script cần chạy với quyền root${NC}"
+        exit 1
+    fi
+}
+
+# Lock mechanism to prevent concurrent execution
+acquire_lock() {
+    if [ -f "$LOCK_FILE" ]; then
+        PID=$(cat "$LOCK_FILE")
+        if kill -0 "$PID" 2>/dev/null; then
+            echo -e "${RED}❌ DAKDO đang chạy (PID: $PID)${NC}"
+            exit 1
+        else
+            rm -f "$LOCK_FILE"
+        fi
+    fi
+    echo $$ > "$LOCK_FILE"
+}
+
+# Release lock
+release_lock() {
+    rm -f "$LOCK_FILE"
+}
+
+# Trap to ensure cleanup on exit
+trap release_lock EXIT
+
+\'] ]]; then
         echo -e "${RED}❌ Domain chứa ký tự không an toàn${NC}"
         return 1
     fi
