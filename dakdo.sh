@@ -180,9 +180,6 @@ while true; do
   echo "3. Cài SSL Let's Encrypt"
   echo "4. Backup website tĩnh"
   echo "5. Khôi phục website từ file .zip"
-  echo "6. Xoá website"
-  echo "7. Danh sách website"
-  echo "8. Thông tin hệ thống"
   echo "0. Thoát"
   read -p "→ Chọn chức năng (0-5): " MENU
   case $MENU in
@@ -191,39 +188,8 @@ while true; do
     3) install_ssl ;;
     4) backup_website ;;
     5) restore_website ;;
-    6) remove_website ;;
-    7) list_websites ;;
-    8) system_info ;;
     0) echo "Tạm biệt!"; exit 0 ;;
     *) echo -e "${RED}❌ Lựa chọn không hợp lệ.${NC}" && read -p "Nhấn Enter để tiếp tục..." ;;
   esac
   read -p "Nhấn Enter để quay lại menu chính..." tmp
 done
-
-# === Chức năng 6: Xoá website ===
-remove_website() {
-  read -p "🗑 Nhập domain cần xoá: " DOMAIN
-  [[ -z "$DOMAIN" ]] && echo -e "${RED}❌ Domain không được để trống.${NC}" && return
-
-  rm -rf "$WWW_DIR/$DOMAIN"
-  rm -f "$NGINX_ENABLED/$DOMAIN"
-  rm -f "$NGINX_AVAILABLE/$DOMAIN"
-
-  nginx -t && systemctl reload nginx
-  echo -e "${RED}🗑 Đã xoá website: $DOMAIN${NC}"
-}
-
-# === Chức năng 7: Danh sách website ===
-list_websites() {
-  echo -e "${YELLOW}📄 Danh sách website đã cấu hình:${NC}"
-  ls $NGINX_AVAILABLE 2>/dev/null || echo "(Chưa có website nào)"
-}
-
-# === Chức năng 8: Thông tin hệ thống ===
-system_info() {
-  echo -e "${YELLOW}📊 Thông tin VPS:${NC}"
-  echo "🌍 IP VPS: $(curl -s ifconfig.me)"
-  echo "📁 Thư mục web: $WWW_DIR"
-  echo "📁 Thư mục backup: $BACKUP_DIR"
-  echo "📅 SSL sẽ tự động gia hạn lúc 03:00 sáng mỗi ngày (cron)"
-}
