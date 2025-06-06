@@ -231,7 +231,58 @@ list_websites() {
     ls /etc/nginx/sites-available 2>/dev/null || echo "(Không có site nào)"
     echo
 }
+# 🆕 Tạo sitemap.xml cho website
+create_sitemap() {
+    echo -e "\n🔧 Chọn chế độ tạo sitemap.xml:"
+    echo "1. Tạo cho 1 website cụ thể"
+    echo "2. Tạo cho TẤT CẢ website"
+    read -p "→ Lựa chọn (1-2): " MODE
 
+    if [[ "$MODE" == "1" ]]; then
+        read -p "🌐 Nhập domain để tạo sitemap.xml (nhập 0 để quay lại): " DOMAIN
+        if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
+            echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+            return
+        fi
+        generate_sitemap_for_domain "$DOMAIN"
+
+    elif [[ "$MODE" == "2" ]]; then
+        echo -e "${YELLOW}⚠️ Thao tác này sẽ ghi đè sitemap.xml hiện tại (nếu có) cho tất cả website.${NC}"
+        read -p "❓ Bạn có chắc muốn tiếp tục? (gõ 'yes' để xác nhận): " CONFIRM
+        [[ "$CONFIRM" != "yes" ]] && echo -e "${YELLOW}⏪ Hủy thao tác.${NC}" && return
+        for DIR in "$WWW_DIR"/*; do
+            DOMAIN=$(basename "$DIR")
+            generate_sitemap_for_domain "$DOMAIN"
+        done
+        echo -e "${GREEN}✅ Đã tạo sitemap.xml cho tất cả website.${NC}"
+    else
+        echo -e "${RED}❌ Lựa chọn không hợp lệ.${NC}"
+    fi
+}
+
+generate_sitemap_for_domain() {
+    DOMAIN="$1"
+    SITE_DIR="$WWW_DIR/$DOMAIN"
+    if [[ ! -d "$SITE_DIR" ]]; then
+        echo -e "${RED}❌ Không tìm thấy thư mục /var/www/$DOMAIN${NC}"
+        return
+    fi
+    echo -e "${GREEN}🔎 Đang tạo sitemap.xml cho $DOMAIN...${NC}"
+    URLS=""
+    while IFS= read -r -d '' file; do
+        REL_PATH="${file#$SITE_DIR/}"
+        [[ "$REL_PATH" == "index.html" ]] && REL_PATH=""
+        URLS+="    <url><loc>https://$DOMAIN/$REL_PATH</loc></url>\n"
+    done < <(find "$SITE_DIR" -type f -name "*.html" -print0)
+
+    cat > "$SITE_DIR/sitemap.xml" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+$URLS</urlset>
+EOF
+
+    echo -e "${GREEN}✅ Đã tạo sitemap.xml tại $SITE_DIR/sitemap.xml${NC}"
+}
 info_dakdo() {
     echo "📦 DAKDO Web Manager v$DAKDO_VERSION"
     echo "🌍 IP VPS: $(curl -s https://api.ipify.org)"
@@ -303,6 +354,7 @@ menu_dakdo() {
     echo "7. Khôi phục Website từ Backup (.zip)"
     echo "8. Xoá Website"
     echo "9. Thông tin hệ thống"
+    echo "10. Tạo sitemap.xml cho Website"
     echo "0. Thoát"
     read -p "→ Chọn thao tác (0-9): " CHOICE
     case $CHOICE in
@@ -315,6 +367,7 @@ menu_dakdo() {
         7) restore_website ;;
         8) remove_website ;;
         9) info_dakdo ;;
+        10) create_sitemap ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
