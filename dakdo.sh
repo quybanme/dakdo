@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # DAKDO STATIC v3.0 – Triển khai web tĩnh, nhanh và gọn trên Ubuntu VPS
-# Author: @dophuquy – https://facebook.com/dophuquy
+# Author: @dophuquy – https://facebook.com/dophuquy - https://github.com/quybanme
 
 DAKDO_VERSION="3.0"
 WWW_DIR="/var/www"
