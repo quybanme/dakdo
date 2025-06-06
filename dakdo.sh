@@ -177,7 +177,7 @@ backup_single_site() {
 
 backup_all_sites() {
     ZIP_FILE="$BACKUP_DIR/AllWebsite_backup_$(date +%F).zip"
-    (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" .)
+    (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" */)
     echo -e "${GREEN}✅ Đã backup toàn bộ website vào: $(realpath "$ZIP_FILE")${NC}"
     du -h "$ZIP_FILE"
 }
