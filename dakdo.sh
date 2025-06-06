@@ -194,8 +194,8 @@ backup_website() {
             ;;
         3)
             ZIP_FILE="$BACKUP_DIR/AllWebsite_$(date +%F).zip"
-            echo -e "${GREEN}📦 Đang nén toàn bộ website vào 1 file duy nhất...${NC}"
-            (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" . -i ./*/)
+            echo -e "${GREEN}📦 Đang nén toàn bộ website (gồm nội dung) vào 1 file duy nhất...${NC}"
+            (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" .)
             echo -e "${GREEN}✅ Backup tất cả website hoàn tất: $(realpath "$ZIP_FILE")${NC}"
             du -h "$ZIP_FILE"
             ;;
