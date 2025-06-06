@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v2.5 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v2.6 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="2.5"
+DAKDO_VERSION="2.6"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
