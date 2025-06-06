@@ -159,7 +159,7 @@ ssl_manual() {
 }
 
 backup_website() {
-    read -p "💾 Nhập domain cần backup (hoặc * để backup tất cả, 0 để quay lại): " DOMAIN
+    read -p "💾 Nhập domain cần backup (gõ tên domain / * / ** / 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
@@ -168,7 +168,7 @@ backup_website() {
     mkdir -p "$BACKUP_DIR"
 
     if [[ "$DOMAIN" == "*" ]]; then
-        echo -e "${GREEN}🔁 Đang tiến hành backup tất cả website...${NC}"
+        echo -e "${GREEN}🔁 Đang tiến hành backup tất cả website (từng file)...${NC}"
         for DIR in "$WWW_DIR"/*; do
             if [ -d "$DIR" ]; then
                 SITE_NAME=$(basename "$DIR")
@@ -177,6 +177,14 @@ backup_website() {
                 echo -e "✅ Đã backup $SITE_NAME → $(realpath "$ZIP_FILE")"
             fi
         done
+
+    elif [[ "$DOMAIN" == "**" ]]; then
+        ZIP_FILE="$BACKUP_DIR/AllWebsite_$(date +%F).zip"
+        echo -e "${GREEN}📦 Đang nén toàn bộ website vào 1 file duy nhất...${NC}"
+        (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" */)
+        echo -e "${GREEN}✅ Backup tất cả website hoàn tất: $(realpath "$ZIP_FILE")${NC}"
+        du -h "$ZIP_FILE"
+
     else
         ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
         (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$DOMAIN")
