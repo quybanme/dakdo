@@ -501,8 +501,6 @@ menu_dakdo() {
     clear
     echo -e "${GREEN}╔══════════════════════════════════════╗"
     echo -e "         DAKDO WEB MANAGER v$DAKDO_VERSION        "
-    echo "🕒 Thời gian hiện tại: $(date '+%H:%M:%S %d-%m-%Y')"
-    echo "🖥️ Tên VPS: $(hostname)"
     echo -e "╚══════════════════════════════════════╝${NC}"
     echo "1. Cài đặt DAKDO (Nginx + SSL + Firewall)"
     echo "2. Thêm Website HTML mới"
