@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v2.1 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v2.2 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="2.1"
+DAKDO_VERSION="2.2"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -179,25 +179,6 @@ backup_website() {
         echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
         du -h "$ZIP_FILE"
     fi
-}
-
-restore_website() {
-    BACKUP_DIR="/root/backups"
-    echo -e "📦 Danh sách file backup có sẵn:"
-    ls "$BACKUP_DIR"/*.zip 2>/dev/null || { echo "❌ Không tìm thấy file backup."; return; }
-
-    read -p "🗂 Nhập tên file backup cần khôi phục (vd: domain_backup_2025-06-06.zip): " ZIP_FILE
-    ZIP_PATH="$BACKUP_DIR/$ZIP_FILE"
-
-    if [ ! -f "$ZIP_PATH" ]; then
-        echo -e "${RED}❌ File không tồn tại: $ZIP_PATH${NC}"
-        return
-    fi
-
-    DOMAIN=$(echo "$ZIP_FILE" | cut -d'_' -f1)
-    unzip -oq "$ZIP_PATH" -d "$WWW_DIR"
-    echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
-    nginx -t && systemctl reload nginx
 }
 
 upload_instructions() {
