@@ -158,45 +158,27 @@ ssl_manual() {
     fi
 }
 
-backup_single_site() {
-    read -p "🌐 Nhập domain cần backup (vd: example.com): " DOMAIN
-    if [[ -z "$DOMAIN" ]]; then
-        echo -e "${RED}❌ Bạn chưa nhập domain.${NC}"
-        return
-    fi
-    SITE_PATH="$WWW_DIR/$DOMAIN"
-    if [[ ! -d "$SITE_PATH" ]]; then
-        echo -e "${RED}❌ Không tìm thấy thư mục $SITE_PATH${NC}"
-        return
-    fi
-    ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
-    (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$DOMAIN")
-    echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
-    du -h "$ZIP_FILE"
-}
-
-backup_all_sites() {
-    ZIP_FILE="$BACKUP_DIR/AllWebsite_backup_$(date +%F).zip"
-    (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" .)
-    echo -e "${GREEN}✅ Đã backup toàn bộ website vào: $(realpath "$ZIP_FILE")${NC}"
-    du -h "$ZIP_FILE"
-}
-
 backup_website() {
+    read -p "💾 Nhập domain cần backup (hoặc * để backup tất cả, 0 để quay lại): " DOMAIN
+    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        return
+    fi
     BACKUP_DIR="/root/backups"
     mkdir -p "$BACKUP_DIR"
-    echo -e "\n💾 Chọn kiểu backup:"
-    echo "1. Backup theo domain"
-    echo "2. Backup toàn bộ Website (gộp thành 1 file zip)"
-    echo "0. Quay lại"
-    read -p "→ Lựa chọn (0-2): " OPTION
 
-    case "$OPTION" in
-        1) backup_single_site ;;
-        2) backup_all_sites ;;
-        0) echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}" ;;
-        *) echo -e "${RED}❌ Lựa chọn không hợp lệ.${NC}" ;;
-    esac
+    if [[ "$DOMAIN" == "*" ]]; then
+        echo -e "${GREEN}🔁 Đang tạo file AllWebsite.zip chứa toàn bộ website...${NC}"
+        ZIP_FILE="$BACKUP_DIR/AllWebsite_$(date +%F).zip"
+        (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" .)
+        echo -e "${GREEN}✅ Backup tất cả website tại: $ZIP_FILE${NC}"
+        du -h "$ZIP_FILE"
+    else
+        ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
+        (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$DOMAIN")
+        echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
+        du -h "$ZIP_FILE"
+    fi
 }
 
 restore_website() {
@@ -213,9 +195,6 @@ restore_website() {
     fi
 
     DOMAIN=$(echo "$ZIP_FILE" | cut -d'_' -f1)
-    RESTORE_DIR="$WWW_DIR/$DOMAIN"
-    mkdir -p "$RESTORE_DIR"
-
     unzip -oq "$ZIP_PATH" -d "$WWW_DIR"
     echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
     nginx -t && systemctl reload nginx
@@ -234,7 +213,7 @@ upload_instructions() {
 remove_website() {
     read -p "⚠ Nhập domain cần xoá (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+        echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
         return
     fi
     read -p "❓ Bạn có chắc muốn xoá $DOMAIN? (gõ 'yes' để xác nhận): " CONFIRM
