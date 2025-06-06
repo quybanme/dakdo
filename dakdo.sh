@@ -372,12 +372,8 @@ rename_domain() {
     cp "$OLD_CONF" "$NEW_CONF"
     sed -i "s/$OLD_DOMAIN/$NEW_DOMAIN/g" "$NEW_CONF"
 
-    # Tạo symlink mới, xoá symlink cũ
+    # Tạo symlink mới cho domain mới
     ln -sf "$NEW_CONF" "/etc/nginx/sites-enabled/$NEW_DOMAIN"
-    rm -f "/etc/nginx/sites-enabled/$OLD_DOMAIN"
-
-    # Reload Nginx
-    nginx -t && systemctl reload nginx
 
     echo -e "${GREEN}✅ Đã đổi domain từ $OLD_DOMAIN sang $NEW_DOMAIN${NC}"
 
@@ -393,18 +389,19 @@ rename_domain() {
 
     read -p "📡 Bạn có muốn cấu hình redirect $OLD_DOMAIN → $NEW_DOMAIN không? (y/n): " REDIRECT_CONFIRM
     if [[ "$REDIRECT_CONFIRM" == "y" ]]; then
-        REDIRECT_CONF="/etc/nginx/sites-available/$OLD_DOMAIN"
-        cat > "$REDIRECT_CONF" <<EOF
+        cat > "$OLD_CONF" <<EOF
 server {
     listen 80;
     server_name $OLD_DOMAIN www.$OLD_DOMAIN;
     return 301 https://$NEW_DOMAIN\$request_uri;
 }
 EOF
-        ln -sf "$REDIRECT_CONF" "/etc/nginx/sites-enabled/$OLD_DOMAIN"
-        nginx -t && systemctl reload nginx
+        ln -sf "$OLD_CONF" "/etc/nginx/sites-enabled/$OLD_DOMAIN"
         echo -e "${GREEN}🔁 Đã cấu hình redirect từ $OLD_DOMAIN sang $NEW_DOMAIN${NC}"
     fi
+
+    # Reload Nginx sau khi mọi thay đổi hoàn tất
+    nginx -t && systemctl reload nginx
 }
 info_dakdo() {
     echo "📦 DAKDO Web Manager v$DAKDO_VERSION"
