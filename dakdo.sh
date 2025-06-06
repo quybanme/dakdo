@@ -209,16 +209,6 @@ restore_website() {
     fi
 }
 
-upload_instructions() {
-    echo -e "${GREEN}📤 Hướng dẫn tải file .zip lên VPS để khôi phục website:${NC}"
-    echo -e "1️⃣ Trên máy tính, mở Terminal hoặc CMD (có hỗ trợ scp)"
-    echo -e "2️⃣ Chạy lệnh sau để upload file .zip lên VPS:\n"
-    echo -e "   ${YELLOW}scp ten_file_backup.zip root@$(curl -s https://api.ipify.org):/root/backups/${NC}\n"
-    echo -e "💡 Ví dụ:"
-    echo -e "   scp ~/Downloads/ten_file.zip root@$(curl -s https://api.ipify.org):/root/backups/"
-    echo -e "💬 Sau khi tải lên, quay lại menu và chọn mục 'Khôi phục Website' để tiến hành."
-}
-
 remove_website() {
     read -p "⚠ Nhập domain cần xoá (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
@@ -308,13 +298,11 @@ menu_dakdo() {
     echo "2. Thêm Website HTML mới"
     echo "3. Tạo lại cấu hình Nginx từ /var/www"
     echo "4. Cài / Gia hạn SSL cho Website"
-    echo "5. Kiểm tra Domain"
-    echo "6. Danh sách Website đã cài"
-    echo "7. Backup Website"
-    echo "8. Khôi phục Website từ Backup (.zip)"
-    echo "9. Hướng dẫn tải file Backup lên VPS"
-    echo "10. Xoá Website"
-    echo "11. Thông tin hệ thống"
+    echo "5. Danh sách Website đã cài"
+    echo "6. Backup Website"
+    echo "7. Khôi phục Website từ Backup (.zip)"
+    echo "8. Xoá Website"
+    echo "9. Thông tin hệ thống"
     echo "0. Thoát"
     read -p "→ Chọn thao tác (0-11): " CHOICE
     case $CHOICE in
@@ -322,16 +310,11 @@ menu_dakdo() {
         2) add_website ;;
         3) auto_generate_nginx_configs ;;
         4) ssl_manual ;;
-        5)
-            read -p "🌐 Nhập domain để kiểm tra (nhập 0 để quay lại): " DOMAIN
-            [[ "$DOMAIN" != "0" && -n "$DOMAIN" ]] && check_domain "$DOMAIN"
-            ;;
-        6) list_websites ;;
-        7) backup_website ;;
-        8) restore_website ;;
-        9) upload_instructions ;;
-        10) remove_website ;;
-        11) info_dakdo ;;
+        5) list_websites ;;
+        6) backup_website ;;
+        7) restore_website ;;
+        8) remove_website ;;
+        9) info_dakdo ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
