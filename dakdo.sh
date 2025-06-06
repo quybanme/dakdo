@@ -339,6 +339,58 @@ Sitemap: https://$DOMAIN/sitemap.xml
 EOF
     echo -e "${GREEN}✅ Đã tạo robots.txt tại $SITE_DIR/robots.txt${NC}"
 }
+# 🆕 Đổi tên domain cho website
+rename_domain() {
+    read -p "🔁 Nhập domain cũ (ví dụ: old.com): " OLD_DOMAIN
+    read -p "➡️  Nhập domain mới (ví dụ: new.com): " NEW_DOMAIN
+
+    OLD_DIR="$WWW_DIR/$OLD_DOMAIN"
+    NEW_DIR="$WWW_DIR/$NEW_DOMAIN"
+    OLD_CONF="/etc/nginx/sites-available/$OLD_DOMAIN"
+    NEW_CONF="/etc/nginx/sites-available/$NEW_DOMAIN"
+
+    # Kiểm tra tồn tại domain cũ
+    if [[ ! -d "$OLD_DIR" || ! -f "$OLD_CONF" ]]; then
+        echo -e "${RED}❌ Domain cũ không tồn tại hoặc chưa được cấu hình.${NC}"
+        return
+    fi
+
+    # Kiểm tra domain mới chưa trùng
+    if [[ -d "$NEW_DIR" || -f "$NEW_CONF" ]]; then
+        echo -e "${RED}❌ Domain mới đã tồn tại trên hệ thống. Hãy chọn tên khác.${NC}"
+        return
+    fi
+
+    echo -e "${YELLOW}⚠️ Tác vụ này sẽ đổi tên website và cấu hình Nginx tương ứng.${NC}"
+    read -p "❓ Xác nhận thực hiện (gõ 'yes'): " CONFIRM
+    [[ "$CONFIRM" != "yes" ]] && echo -e "${YELLOW}⏪ Hủy thao tác.${NC}" && return
+
+    # Đổi tên thư mục web
+    mv "$OLD_DIR" "$NEW_DIR"
+
+    # Sao chép và sửa file cấu hình Nginx
+    cp "$OLD_CONF" "$NEW_CONF"
+    sed -i "s/$OLD_DOMAIN/$NEW_DOMAIN/g" "$NEW_CONF"
+
+    # Tạo symlink mới, xoá symlink cũ
+    ln -sf "$NEW_CONF" "/etc/nginx/sites-enabled/$NEW_DOMAIN"
+    rm -f "/etc/nginx/sites-enabled/$OLD_DOMAIN"
+
+    # Reload Nginx
+    nginx -t && systemctl reload nginx
+
+    echo -e "${GREEN}✅ Đã đổi domain từ $OLD_DOMAIN sang $NEW_DOMAIN${NC}"
+
+    read -p "🔐 Cài SSL mới cho $NEW_DOMAIN? (y/n): " SSL_CONFIRM
+    if [[ "$SSL_CONFIRM" == "y" ]]; then
+        certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $NEW_DOMAIN -d www.$NEW_DOMAIN
+        if [[ $? -eq 0 ]]; then
+            echo -e "${GREEN}🔒 SSL đã cài thành công cho $NEW_DOMAIN${NC}"
+        else
+            echo -e "${RED}❌ Cài SSL thất bại. Vui lòng kiểm tra domain hoặc kết nối.${NC}"
+        fi
+    fi
+}
 info_dakdo() {
     echo "📦 DAKDO Web Manager v$DAKDO_VERSION"
     echo "🌍 IP VPS: $(curl -s https://api.ipify.org)"
@@ -412,8 +464,9 @@ menu_dakdo() {
     echo "9. Thông tin hệ thống"
     echo "10. Tạo sitemap.xml cho Website"
     echo "11. Tạo robots.txt cho Website"
+    echo "12. Đổi tên domain cho Website"
     echo "0. Thoát"
-    read -p "→ Chọn thao tác (0-11): " CHOICE
+    read -p "→ Chọn thao tác (0-12): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -426,6 +479,7 @@ menu_dakdo() {
         9) info_dakdo ;;
         10) create_sitemap ;;
         11) create_robots ;;
+        12) rename_domain ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
