@@ -245,14 +245,22 @@ list_websites() {
 info_dakdo() {
     echo "📦 DAKDO Web Manager v$DAKDO_VERSION"
     echo "🌍 IP VPS: $(curl -s https://api.ipify.org)"
+    echo "🧠 OS: $(lsb_release -d | cut -f2- 2>/dev/null || grep PRETTY_NAME /etc/os-release | cut -d= -f2- | tr -d '\"')"
+    echo "🕒 Uptime: $(uptime -p)"
+    echo "💾 Disk: $(df -h / | awk 'NR==2{print $3 "/" $2 " used"}')"
+    echo "🧮 RAM: $(free -h | awk '/Mem:/{print $3 "/" $2 " used"}')"
+    echo "⚙️ CPU cores: $(nproc)"
+    echo
     echo "📁 Web Root: $WWW_DIR"
     echo "📧 Email SSL: $EMAIL"
     echo "📅 SSL tự động gia hạn: 03:00 hàng ngày"
-    echo "🧠 OS: $(lsb_release -d | cut -f2-)"
-    echo "🕒 Uptime: $(uptime -p)"
-    echo "💾 Ổ cứng: $(df -h / | awk 'NR==2{print $3 "/" $2 " used"}')"
-    echo "🧮 RAM: $(free -h | awk '/Mem:/{print $3 "/" $2 " used"}')"
-    echo "🧠 CPU cores: $(nproc)"
+    echo
+    echo "🗂 Thư mục lưu file Backup: /root/backups"
+    BACKUP_DIR="/root/backups"
+    TOTAL_FILES=$(ls $BACKUP_DIR/*.zip 2>/dev/null | wc -l)
+    USED_SPACE=$(du -sh $BACKUP_DIR 2>/dev/null | awk '{print $1}')
+    echo "📦 Số file backup: $TOTAL_FILES file (.zip)"
+    echo "📦 Dung lượng backup đã dùng: $USED_SPACE"
 }
 
 auto_generate_nginx_configs() {
