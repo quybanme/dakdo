@@ -31,6 +31,7 @@ check_domain() {
     fi
 }
 
+# 🧱 Cài đặt nền tảng: Nginx + SSL + Firewall + Default Block
 install_base() {
     if command -v nginx > /dev/null; then
         echo -e "${GREEN}✅ Nginx đã được cài. Bỏ qua bước cài đặt.${NC}"
@@ -47,10 +48,24 @@ install_base() {
     ufw allow 443/tcp
     ufw --force enable
 
+    # Cron SSL
     if ! crontab -l 2>/dev/null | grep -q 'certbot renew'; then
         (crontab -l 2>/dev/null; echo "0 3 * * * /usr/bin/certbot renew --quiet") | crontab -
         echo "✅ Đã thêm cron tự động gia hạn SSL"
     fi
+
+    # 🛡️ Chặn domain lạ không được cấu hình
+    echo -e "${GREEN}🔐 Thiết lập chặn các domain không được khai báo...${NC}"
+    cat > /etc/nginx/sites-available/default <<EOF
+server {
+    listen 80 default_server;
+    server_name _;
+    return 403 "🚫 Tên miền này chưa được cấu hình trên hệ thống.";
+}
+EOF
+    ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+    nginx -t && systemctl reload nginx
+    echo -e "${GREEN}✅ Đã kích hoạt chế độ chặn domain lạ (default server).${NC}"
 }
 add_website() {
     read -p "🌐 Nhập domain cần thêm (nhập 0 để quay lại): " DOMAIN
