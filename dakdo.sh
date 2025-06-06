@@ -231,7 +231,7 @@ list_websites() {
     ls /etc/nginx/sites-available 2>/dev/null || echo "(Không có site nào)"
     echo
 }
-# 🆕 Tạo sitemap.xml cho website và ping Google
+# 🆕 Tạo sitemap.xml cho website
 create_sitemap() {
     echo -e "\n🔧 Chọn chế độ tạo sitemap.xml:"
     echo "1. Tạo cho 1 website cụ thể"
@@ -282,16 +282,6 @@ $URLS</urlset>
 EOF
 
     echo -e "${GREEN}✅ Đã tạo sitemap.xml tại $SITE_DIR/sitemap.xml${NC}"
-
-    read -p "📡 Gửi ping sitemap tới Google? (y/n): " PING_CONFIRM
-    if [[ "$PING_CONFIRM" == "y" ]]; then
-        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "http://www.google.com/ping?sitemap=https://$DOMAIN/sitemap.xml")
-        if [[ "$RESPONSE" == "200" ]]; then
-            echo -e "${GREEN}✅ Ping thành công sitemap tới Google cho $DOMAIN${NC}"
-        else
-            echo -e "${RED}❌ Ping thất bại (mã lỗi: $RESPONSE). Hãy kiểm tra sitemap hoặc kết nối.${NC}"
-        fi
-    fi
 }
 # 🆕 Tạo robots.txt
 create_robots() {
@@ -420,7 +410,7 @@ menu_dakdo() {
     echo "7. Khôi phục Website từ Backup (.zip)"
     echo "8. Xoá Website"
     echo "9. Thông tin hệ thống"
-    echo "10. Tạo sitemap.xml cho Website & Ping Google"
+    echo "10. Tạo sitemap.xml cho Website"
     echo "11. Tạo robots.txt cho Website"
     echo "0. Thoát"
     read -p "→ Chọn thao tác (0-11): " CHOICE
