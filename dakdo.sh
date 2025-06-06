@@ -220,7 +220,7 @@ restore_website() {
     nginx -t && systemctl reload nginx
 
     if [[ "$ZIP_FILE" == AllWebsite* ]]; then
-        echo -e "${YELLOW}💡 GỢI Ý: Nếu bạn vừa cài lại VPS và KHÔNG còn file cấu hình Nginx, hãy vào menu và chọn mục '3. Tạo lại cấu hình Nginx từ /var/www'.${NC}"
+        echo -e "${YELLOW}💡 GỢI Ý: Nếu bạn vừa cài lại VPS và KHÔNG còn file cấu hình Nginx, hãy vào menu và chọn mục '11. Tạo lại cấu hình Nginx từ /var/www'.${NC}"
     fi
 }
 
