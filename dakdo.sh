@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v2.2 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v2.4 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="2.2"
+DAKDO_VERSION="2.4"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -181,6 +181,36 @@ backup_website() {
     fi
 }
 
+restore_website() {
+    BACKUP_DIR="/root/backups"
+    echo -e "📦 Danh sách file backup có sẵn:"
+    ls "$BACKUP_DIR"/*.zip 2>/dev/null || { echo "❌ Không tìm thấy file backup."; return; }
+
+    read -p "🗂 Nhập tên file backup cần khôi phục (vd: domain_backup_2025-06-06.zip): " ZIP_FILE
+    ZIP_PATH="$BACKUP_DIR/$ZIP_FILE"
+
+    if [ ! -f "$ZIP_PATH" ]; then
+        echo -e "${RED}❌ File không tồn tại: $ZIP_PATH${NC}"
+        return
+    fi
+
+    if [[ "$ZIP_FILE" == AllWebsite* ]]; then
+        echo -e "${YELLOW}⚠️ Bạn đang khôi phục toàn bộ website từ file $ZIP_FILE${NC}"
+        echo -e "${RED}❗ Các website hiện có trong thư mục $WWW_DIR có thể bị ghi đè nếu trùng tên.${NC}"
+        read -p "❓ Bạn có chắc muốn tiếp tục? (gõ 'yes' để xác nhận): " CONFIRM
+        [[ "$CONFIRM" != "yes" ]] && echo -e "${YELLOW}⏪ Hủy thao tác khôi phục.${NC}" && return
+    fi
+
+    DOMAIN=$(echo "$ZIP_FILE" | cut -d'_' -f1)
+    unzip -oq "$ZIP_PATH" -d "$WWW_DIR"
+    echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
+    nginx -t && systemctl reload nginx
+
+    if [[ "$ZIP_FILE" == AllWebsite* ]]; then
+        echo -e "${YELLOW}💡 GỢI Ý: Nếu bạn vừa cài lại VPS và KHÔNG còn file cấu hình Nginx, hãy vào menu và chọn mục '11. Tạo lại cấu hình Nginx từ /var/www'.${NC}"
+    fi
+}
+
 upload_instructions() {
     echo -e "${GREEN}📤 Hướng dẫn tải file .zip lên VPS để khôi phục website:${NC}"
     echo -e "1️⃣ Trên máy tính, mở Terminal hoặc CMD (có hỗ trợ scp)"
@@ -223,6 +253,42 @@ info_dakdo() {
     echo "📅 SSL tự động gia hạn: 03:00 hàng ngày"
 }
 
+auto_generate_nginx_configs() {
+    for DIR in "$WWW_DIR"/*; do
+        DOMAIN=$(basename "$DIR")
+        CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN"
+
+        if [ ! -f "$CONFIG_FILE" ]; then
+            echo -e "${YELLOW}➕ Đang tạo cấu hình cho $DOMAIN...${NC}"
+            cat > "$CONFIG_FILE" <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+    root $WWW_DIR/$DOMAIN;
+    index index.html;
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+}
+EOF
+            ln -sf "$CONFIG_FILE" "/etc/nginx/sites-enabled/$DOMAIN"
+
+            read -p "🔐 Cài SSL tự động cho $DOMAIN? (y/n): " INSTALL_SSL
+            if [[ "$INSTALL_SSL" == "y" ]]; then
+                if check_domain "$DOMAIN"; then
+                    certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
+                    [[ $? -eq 0 ]] && echo -e "${GREEN}🔒 Đã cài SSL cho $DOMAIN${NC}" || echo -e "${RED}❌ Cài SSL thất bại cho $DOMAIN${NC}"
+                fi
+            fi
+        else
+            echo -e "${GREEN}✔ Đã có cấu hình cho $DOMAIN – bỏ qua${NC}"
+        fi
+    done
+
+    nginx -t && systemctl reload nginx
+    echo -e "${GREEN}✅ Đã reload Nginx với tất cả cấu hình mới.${NC}"
+}
+
 menu_dakdo() {
     clear
     echo -e "${GREEN}╔══════════════════════════════════════╗"
@@ -238,8 +304,9 @@ menu_dakdo() {
     echo "8. Hướng dẫn tải file Backup lên VPS"
     echo "9. Xoá Website"
     echo "10. Thông tin hệ thống"
+    echo "11. Tạo lại cấu hình Nginx từ /var/www"
     echo "0. Thoát"
-    read -p "→ Chọn thao tác (0-10): " CHOICE
+    read -p "→ Chọn thao tác (0-11): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -254,6 +321,7 @@ menu_dakdo() {
         8) upload_instructions ;;
         9) remove_website ;;
         10) info_dakdo ;;
+        11) auto_generate_nginx_configs ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
