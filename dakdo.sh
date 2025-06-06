@@ -248,6 +248,11 @@ info_dakdo() {
     echo "📁 Web Root: $WWW_DIR"
     echo "📧 Email SSL: $EMAIL"
     echo "📅 SSL tự động gia hạn: 03:00 hàng ngày"
+    echo "🧠 OS: $(lsb_release -d | cut -f2-)"
+    echo "🕒 Uptime: $(uptime -p)"
+    echo "💾 Ổ cứng: $(df -h / | awk 'NR==2{print $3 "/" $2 " used"}')"
+    echo "🧮 RAM: $(free -h | awk '/Mem:/{print $3 "/" $2 " used"}')"
+    echo "🧠 CPU cores: $(nproc)"
 }
 
 auto_generate_nginx_configs() {
