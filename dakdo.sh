@@ -224,6 +224,7 @@ restore_website() {
     fi
 }
 
+# 🔥 Xoá website và tạo block cấu hình nếu domain còn trỏ vào VPS
 remove_website() {
     read -p "⚠ Nhập domain cần xoá (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
@@ -235,11 +236,24 @@ remove_website() {
         echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
         return
     fi
+
     rm -rf "$WWW_DIR/$DOMAIN"
     rm -f "/etc/nginx/sites-enabled/$DOMAIN"
     rm -f "/etc/nginx/sites-available/$DOMAIN"
+
+    # ⚠ Sau khi xoá, tạo cấu hình chặn nếu domain vẫn còn trỏ về VPS
+    BLOCK_CONF="/etc/nginx/sites-available/$DOMAIN"
+    cat > "$BLOCK_CONF" <<EOF
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+    return 403 "🚫 Tên miền này đã bị xoá khỏi hệ thống.";
+}
+EOF
+    ln -sf "$BLOCK_CONF" "/etc/nginx/sites-enabled/$DOMAIN"
+
     nginx -t && systemctl reload nginx
-    echo -e "${RED}🗑 Website $DOMAIN đã bị xoá${NC}"
+    echo -e "${RED}🗑 Website $DOMAIN đã bị xoá và được chặn hiển thị lại.${NC}"
 }
 list_websites() {
     echo -e "\n🌐 Danh sách website đã cài:"
