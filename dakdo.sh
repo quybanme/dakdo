@@ -219,6 +219,11 @@ remove_website() {
         echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
         return
     fi
+    # ✅ Kiểm tra cú pháp domain
+    if [[ ! "$DOMAIN" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+    echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
+    return
+    fi
     read -p "❓ Bạn có chắc muốn xoá $DOMAIN? (gõ 'yes' để xác nhận): " CONFIRM
     if [[ "$CONFIRM" != "yes" ]]; then
         echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
@@ -375,7 +380,13 @@ EOF
 rename_domain() {
     read -p "🔁 Nhập domain cũ (ví dụ: old.com): " OLD_DOMAIN
     read -p "➡️  Nhập domain mới (ví dụ: new.com): " NEW_DOMAIN
-
+    # ✅ Kiểm tra định dạng domain
+    for DOMAIN in "$OLD_DOMAIN" "$NEW_DOMAIN"; do
+    if [[ ! "$DOMAIN" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+        echo -e "${RED}❌ Tên miền '$DOMAIN' không hợp lệ.${NC}"
+        return
+    fi
+    done
     OLD_DIR="$WWW_DIR/$OLD_DOMAIN"
     NEW_DIR="$WWW_DIR/$NEW_DOMAIN"
     OLD_CONF="/etc/nginx/sites-available/$OLD_DOMAIN"
