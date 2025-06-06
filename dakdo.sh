@@ -231,11 +231,6 @@ remove_website() {
         echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
         return
     fi
-    # ✅ Kiểm tra cú pháp domain
-    if [[ ! "$DOMAIN" =~ ^[a-zA-Z0-9.-]+$ ]]; then
-    echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
-    return
-    fi
     read -p "❓ Bạn có chắc muốn xoá $DOMAIN? (gõ 'yes' để xác nhận): " CONFIRM
     if [[ "$CONFIRM" != "yes" ]]; then
         echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
