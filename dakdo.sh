@@ -273,7 +273,7 @@ list_websites() {
             COUNT=$((COUNT+1))
         fi
     done
-    echo -e "\n(Tổng cộng là $COUNT website)\n"
+    echo -e "\n(Tổng cộng $COUNT website)\n"
 }
 # 🆕 Tạo sitemap.xml cho website
 create_sitemap() {
