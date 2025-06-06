@@ -224,7 +224,7 @@ restore_website() {
     fi
 }
 
-# 🔥 Xoá website và tạo block cấu hình nếu domain còn trỏ vào VPS
+# 🔥 Xoá website và tạo block cấu hình nếu domain còn trỏ vào VPS (HTTP + HTTPS)
 remove_website() {
     read -p "⚠ Nhập domain cần xoá (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
@@ -241,7 +241,7 @@ remove_website() {
     rm -f "/etc/nginx/sites-enabled/$DOMAIN"
     rm -f "/etc/nginx/sites-available/$DOMAIN"
 
-    # ⚠ Sau khi xoá, tạo cấu hình chặn nếu domain vẫn còn trỏ về VPS
+    # ⚠ Sau khi xoá, tạo cấu hình chặn cả HTTP + HTTPS
     BLOCK_CONF="/etc/nginx/sites-available/$DOMAIN"
     cat > "$BLOCK_CONF" <<EOF
 server {
@@ -249,16 +249,19 @@ server {
     server_name $DOMAIN www.$DOMAIN;
     return 403 "🚫 Tên miền này đã bị xoá khỏi hệ thống.";
 }
+
+server {
+    listen 443 ssl;
+    server_name $DOMAIN www.$DOMAIN;
+    ssl_certificate     /etc/letsencrypt/live/dakdo.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/dakdo.com/privkey.pem;
+    return 403 "🚫 Tên miền này đã bị xoá khỏi hệ thống.";
+}
 EOF
     ln -sf "$BLOCK_CONF" "/etc/nginx/sites-enabled/$DOMAIN"
 
     nginx -t && systemctl reload nginx
-    echo -e "${RED}🗑 Website $DOMAIN đã bị xoá và được chặn hiển thị lại.${NC}"
-}
-list_websites() {
-    echo -e "\n🌐 Danh sách website đã cài:"
-    ls /etc/nginx/sites-available 2>/dev/null || echo "(Không có site nào)"
-    echo
+    echo -e "${RED}🗑 Website $DOMAIN đã bị xoá và được chặn hoàn toàn (HTTP + HTTPS).${NC}"
 }
 # 🆕 Tạo sitemap.xml cho website
 create_sitemap() {
