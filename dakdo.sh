@@ -339,7 +339,7 @@ Sitemap: https://$DOMAIN/sitemap.xml
 EOF
     echo -e "${GREEN}✅ Đã tạo robots.txt tại $SITE_DIR/robots.txt${NC}"
 }
-# 🆕 Đổi tên domain cho website và cấu hình redirect domain cũ
+# 🆕 Đổi tên domain cho website và cấu hình redirect domain cũ (HTTP + HTTPS)
 rename_domain() {
     read -p "🔁 Nhập domain cũ (ví dụ: old.com): " OLD_DOMAIN
     read -p "➡️  Nhập domain mới (ví dụ: new.com): " NEW_DOMAIN
@@ -395,9 +395,19 @@ server {
     server_name $OLD_DOMAIN www.$OLD_DOMAIN;
     return 301 https://$NEW_DOMAIN\$request_uri;
 }
+
+server {
+    listen 443 ssl;
+    server_name $OLD_DOMAIN www.$OLD_DOMAIN;
+
+    ssl_certificate     /etc/letsencrypt/live/$NEW_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$NEW_DOMAIN/privkey.pem;
+
+    return 301 https://$NEW_DOMAIN\$request_uri;
+}
 EOF
         ln -sf "$OLD_CONF" "/etc/nginx/sites-enabled/$OLD_DOMAIN"
-        echo -e "${GREEN}🔁 Đã cấu hình redirect từ $OLD_DOMAIN sang $NEW_DOMAIN${NC}"
+        echo -e "${GREEN}🔁 Đã cấu hình redirect từ $OLD_DOMAIN sang $NEW_DOMAIN (HTTP + HTTPS)${NC}"
     fi
 
     # Reload Nginx sau khi mọi thay đổi hoàn tất
