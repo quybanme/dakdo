@@ -158,25 +158,53 @@ ssl_manual() {
     fi
 }
 
-backup_website() {
-    read -p "💾 Nhập domain cần backup (hoặc * để backup tất cả, 0 để quay lại): " DOMAIN
-    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+backup_single_site() {
+    read -p "🌐 Nhập domain cần backup (vd: example.com): " DOMAIN
+    if [[ -z "$DOMAIN" ]]; then
+        echo -e "${RED}❌ Bạn chưa nhập domain.${NC}"
         return
     fi
+    SITE_PATH="$WWW_DIR/$DOMAIN"
+    if [[ ! -d "$SITE_PATH" ]]; then
+        echo -e "${RED}❌ Không tìm thấy thư mục $SITE_PATH${NC}"
+        return
+    fi
+    ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
+    (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$DOMAIN")
+    echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
+    du -h "$ZIP_FILE"
+}
+
+backup_all_sites() {
+    TMP_DIR="/tmp/dakdo_all_sites_$(date +%s)"
+    mkdir -p "$TMP_DIR"
+    for DIR in "$WWW_DIR"/*; do
+        [ -d "$DIR" ] && cp -r "$DIR" "$TMP_DIR/"
+    done
+
+    ZIP_FILE="$BACKUP_DIR/AllWebsite_backup_$(date +%F).zip"
+    (cd "$TMP_DIR/.." && zip -rq "$ZIP_FILE" "$(basename "$TMP_DIR")")
+    rm -rf "$TMP_DIR"
+
+    echo -e "${GREEN}✅ Đã backup toàn bộ website vào: $(realpath "$ZIP_FILE")${NC}"
+    du -h "$ZIP_FILE"
+}
+
+backup_website() {
     BACKUP_DIR="/root/backups"
     mkdir -p "$BACKUP_DIR"
+    echo -e "\n💾 Chọn kiểu backup:"
+    echo "1. Backup theo domain"
+    echo "2. Backup toàn bộ Website (gộp thành 1 file zip)"
+    echo "0. Quay lại"
+    read -p "→ Lựa chọn (0-2): " OPTION
 
-    if [[ "$DOMAIN" == "*" ]]; then
-        ZIP_FILE="$BACKUP_DIR/AllWebsite_$(date +%F).zip"
-        (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" *)
-        echo -e "${GREEN}✅ Backup tất cả website hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
-    else
-        ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
-        (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$DOMAIN")
-        echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
-        du -h "$ZIP_FILE"
-    fi
+    case "$OPTION" in
+        1) backup_single_site ;;
+        2) backup_all_sites ;;
+        0) echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}" ;;
+        *) echo -e "${RED}❌ Lựa chọn không hợp lệ.${NC}" ;;
+    esac
 }
 
 restore_website() {
@@ -184,7 +212,7 @@ restore_website() {
     echo -e "📦 Danh sách file backup có sẵn:"
     ls "$BACKUP_DIR"/*.zip 2>/dev/null || { echo "❌ Không tìm thấy file backup."; return; }
 
-    read -p "🗂 Nhập tên file backup cần khôi phục (vd: domain_backup_2025-06-06.zip hoặc AllWebsite_2025-06-06.zip): " ZIP_FILE
+    read -p "🗂 Nhập tên file backup cần khôi phục (vd: domain_backup_2025-06-06.zip): " ZIP_FILE
     ZIP_PATH="$BACKUP_DIR/$ZIP_FILE"
 
     if [ ! -f "$ZIP_PATH" ]; then
@@ -192,20 +220,13 @@ restore_website() {
         return
     fi
 
-    if [[ "$ZIP_FILE" == AllWebsite_* ]]; then
-        echo -e "${GREEN}🔄 Khôi phục toàn bộ website từ backup $ZIP_FILE...${NC}"
-        unzip -oq "$ZIP_PATH" -d "$WWW_DIR"
-        echo -e "🔍 Danh sách domain khôi phục:"
-        ls -1 "$WWW_DIR"
-    else
-        DOMAIN=$(echo "$ZIP_FILE" | cut -d'_' -f1)
-        RESTORE_DIR="$WWW_DIR/$DOMAIN"
-        mkdir -p "$RESTORE_DIR"
-        unzip -oq "$ZIP_PATH" -d "$WWW_DIR"
-        echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
-    fi
+    DOMAIN=$(echo "$ZIP_FILE" | cut -d'_' -f1)
+    RESTORE_DIR="$WWW_DIR/$DOMAIN"
+    mkdir -p "$RESTORE_DIR"
+
+    unzip -oq "$ZIP_PATH" -d "$WWW_DIR"
+    echo -e "${GREEN}✅ Đã khôi phục website $DOMAIN từ $ZIP_FILE${NC}"
     nginx -t && systemctl reload nginx
-    echo -e "${GREEN}✅ Nginx đã reload sau khi khôi phục.${NC}"
 }
 
 upload_instructions() {
@@ -221,7 +242,7 @@ upload_instructions() {
 remove_website() {
     read -p "⚠ Nhập domain cần xoá (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
+        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
     read -p "❓ Bạn có chắc muốn xoá $DOMAIN? (gõ 'yes' để xác nhận): " CONFIRM
