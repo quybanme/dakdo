@@ -356,7 +356,7 @@ menu_dakdo() {
     echo "9. Thông tin hệ thống"
     echo "10. Tạo sitemap.xml cho Website"
     echo "0. Thoát"
-    read -p "→ Chọn thao tác (0-9): " CHOICE
+    read -p "→ Chọn thao tác (0-10): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
