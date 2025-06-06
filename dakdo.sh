@@ -56,6 +56,11 @@ add_website() {
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
+    # ✅ Kiểm tra cú pháp domain
+    if [[ ! "$DOMAIN" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+    echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
+    return
+    fi
     check_domain "$DOMAIN" || return
     SITE_DIR="$WWW_DIR/$DOMAIN"
     mkdir -p "$SITE_DIR"
