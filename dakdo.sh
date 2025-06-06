@@ -263,13 +263,15 @@ EOF
     nginx -t && systemctl reload nginx
     echo -e "${RED}🗑 Website $DOMAIN đã bị xoá và được chặn hoàn toàn (HTTP + HTTPS).${NC}"
 }
-# 📋 Danh sách website thật sự đã cài (ẩn default và đếm số lượng)
+# 📋 Danh sách website thật sự đã cài (ẩn default, kiểm tra thư mục tồn tại, đếm số lượng)
 list_websites() {
     echo -e "\n🌐 Danh sách website đã cài:"
     COUNT=0
     for SITE in $(ls /etc/nginx/sites-available 2>/dev/null | grep -v '^default$'); do
-        echo "$SITE"
-        COUNT=$((COUNT+1))
+        if [[ -d "$WWW_DIR/$SITE" ]]; then
+            echo "$SITE"
+            COUNT=$((COUNT+1))
+        fi
     done
     echo -e "\n📦 Hiện tại có $COUNT website đã cài.\n"
 }
