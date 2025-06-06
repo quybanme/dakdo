@@ -273,7 +273,7 @@ list_websites() {
             COUNT=$((COUNT+1))
         fi
     done
-    echo -e "\n📦 Hiện tại có $COUNT website đã cài.\n"
+    echo -e "\n(Tổng cộng là $COUNT website)\n"
 }
 # 🆕 Tạo sitemap.xml cho website
 create_sitemap() {
