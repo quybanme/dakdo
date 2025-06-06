@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# DAKDO v3.0 – Web Manager for HTML + SSL + Backup + Restore
-# Author: @quybanme – https://github.com/quybanme
+# DAKDO STATIC v3.0 – Triển khai web tĩnh, nhanh và gọn trên Ubuntu VPS
+# Author: @dophuquy – https://facebook.com/dophuquy
 
 DAKDO_VERSION="3.0"
 WWW_DIR="/var/www"
@@ -489,7 +489,7 @@ EOF
     nginx -t && systemctl reload nginx
 }
 info_dakdo() {
-    echo "📦 DAKDO Web Manager v$DAKDO_VERSION"
+    echo "📦 DAKDO STATIC v$DAKDO_VERSION"
     echo "🌍 IP VPS: $(curl -s https://api.ipify.org)"
     echo "🧠 OS: $(lsb_release -d | cut -f2- 2>/dev/null || grep PRETTY_NAME /etc/os-release | cut -d= -f2- | tr -d '\"')"
     echo "🕒 Uptime: $(uptime -p)"
@@ -548,7 +548,7 @@ EOF
 menu_dakdo() {
     clear
     echo -e "${GREEN}╔══════════════════════════════════════╗"
-    echo -e "         DAKDO WEB MANAGER v$DAKDO_VERSION        "
+    echo -e "         DAKDO STATIC v$DAKDO_VERSION        "
     echo -e "╚══════════════════════════════════════╝${NC}"
     echo "1. Cài đặt DAKDO (Nginx + SSL + Firewall)"
     echo "2. Thêm Website HTML mới"
