@@ -185,6 +185,12 @@ backup_website() {
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
+    if [[ "$DOMAIN" != "*" ]]; then
+    if ! echo "$DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
+        echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
+        return
+    fi
+    fi
     BACKUP_DIR="/root/backups"
     mkdir -p "$BACKUP_DIR"
 
