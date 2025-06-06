@@ -159,38 +159,53 @@ ssl_manual() {
 }
 
 backup_website() {
-    read -p "💾 Nhập domain cần backup (gõ tên domain / * / ** / 0 để quay lại): " DOMAIN
-    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-        return
-    fi
+    echo -e "
+💾 Chọn kiểu backup:"
+    echo "1. Backup 1 website cụ thể"
+    echo "2. Backup tất cả website (từng file .zip riêng)"
+    echo "3. Backup tất cả website (1 file .zip duy nhất: AllWebsite-yyyy-mm-dd.zip)"
+    read -p "→ Nhập lựa chọn (1-3, 0 để quay lại): " BACKUP_OPTION
+
     BACKUP_DIR="/root/backups"
     mkdir -p "$BACKUP_DIR"
 
-    if [[ "$DOMAIN" == "*" ]]; then
-        echo -e "${GREEN}🔁 Đang tiến hành backup tất cả website (từng file)...${NC}"
-        for DIR in "$WWW_DIR"/*; do
-            if [ -d "$DIR" ]; then
-                SITE_NAME=$(basename "$DIR")
-                ZIP_FILE="$BACKUP_DIR/${SITE_NAME}_backup_$(date +%F).zip"
-                (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$SITE_NAME")
-                echo -e "✅ Đã backup $SITE_NAME → $(realpath "$ZIP_FILE")"
+    case "$BACKUP_OPTION" in
+        1)
+            read -p "🌐 Nhập domain cần backup: " DOMAIN
+            if [[ -z "$DOMAIN" ]]; then
+                echo -e "${RED}❌ Domain không được để trống.${NC}"
+                return
             fi
-        done
-
-    elif [[ "$DOMAIN" == "**" ]]; then
-        ZIP_FILE="$BACKUP_DIR/AllWebsite_$(date +%F).zip"
-        echo -e "${GREEN}📦 Đang nén toàn bộ website vào 1 file duy nhất...${NC}"
-        (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" */)
-        echo -e "${GREEN}✅ Backup tất cả website hoàn tất: $(realpath "$ZIP_FILE")${NC}"
-        du -h "$ZIP_FILE"
-
-    else
-        ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
-        (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$DOMAIN")
-        echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
-        du -h "$ZIP_FILE"
-    fi
+            ZIP_FILE="$BACKUP_DIR/${DOMAIN}_backup_$(date +%F).zip"
+            (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$DOMAIN")
+            echo -e "${GREEN}✅ Backup hoàn tất tại: $(realpath "$ZIP_FILE")${NC}"
+            du -h "$ZIP_FILE"
+            ;;
+        2)
+            echo -e "${GREEN}🔁 Backup từng website thành file riêng...${NC}"
+            for DIR in "$WWW_DIR"/*; do
+                if [ -d "$DIR" ]; then
+                    SITE_NAME=$(basename "$DIR")
+                    ZIP_FILE="$BACKUP_DIR/${SITE_NAME}_backup_$(date +%F).zip"
+                    (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" "$SITE_NAME")
+                    echo -e "✅ Đã backup $SITE_NAME → $(realpath "$ZIP_FILE")"
+                fi
+            done
+            ;;
+        3)
+            ZIP_FILE="$BACKUP_DIR/AllWebsite_$(date +%F).zip"
+            echo -e "${GREEN}📦 Đang nén toàn bộ website vào 1 file duy nhất...${NC}"
+            (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" . -i ./*/)
+            echo -e "${GREEN}✅ Backup tất cả website hoàn tất: $(realpath "$ZIP_FILE")${NC}"
+            du -h "$ZIP_FILE"
+            ;;
+        0)
+            echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+            ;;
+        *)
+            echo -e "${RED}❌ Lựa chọn không hợp lệ.${NC}"
+            ;;
+    esac
 }
 
 restore_website() {
