@@ -263,10 +263,15 @@ EOF
     nginx -t && systemctl reload nginx
     echo -e "${RED}🗑 Website $DOMAIN đã bị xoá và được chặn hoàn toàn (HTTP + HTTPS).${NC}"
 }
+# 📋 Danh sách website thật sự đã cài (ẩn default và đếm số lượng)
 list_websites() {
     echo -e "\n🌐 Danh sách website đã cài:"
-    ls /etc/nginx/sites-available 2>/dev/null || echo "(Không có site nào)"
-    echo
+    COUNT=0
+    for SITE in $(ls /etc/nginx/sites-available 2>/dev/null | grep -v '^default$'); do
+        echo "$SITE"
+        COUNT=$((COUNT+1))
+    done
+    echo -e "\n📦 Hiện tại có $COUNT website đã cài.\n"
 }
 # 🆕 Tạo sitemap.xml cho website
 create_sitemap() {
