@@ -339,7 +339,7 @@ Sitemap: https://$DOMAIN/sitemap.xml
 EOF
     echo -e "${GREEN}✅ Đã tạo robots.txt tại $SITE_DIR/robots.txt${NC}"
 }
-# 🆕 Đổi tên domain cho website
+# 🆕 Đổi tên domain cho website và cấu hình redirect domain cũ
 rename_domain() {
     read -p "🔁 Nhập domain cũ (ví dụ: old.com): " OLD_DOMAIN
     read -p "➡️  Nhập domain mới (ví dụ: new.com): " NEW_DOMAIN
@@ -389,6 +389,21 @@ rename_domain() {
         else
             echo -e "${RED}❌ Cài SSL thất bại. Vui lòng kiểm tra domain hoặc kết nối.${NC}"
         fi
+    fi
+
+    read -p "📡 Bạn có muốn cấu hình redirect $OLD_DOMAIN → $NEW_DOMAIN không? (y/n): " REDIRECT_CONFIRM
+    if [[ "$REDIRECT_CONFIRM" == "y" ]]; then
+        REDIRECT_CONF="/etc/nginx/sites-available/$OLD_DOMAIN"
+        cat > "$REDIRECT_CONF" <<EOF
+server {
+    listen 80;
+    server_name $OLD_DOMAIN www.$OLD_DOMAIN;
+    return 301 https://$NEW_DOMAIN\$request_uri;
+}
+EOF
+        ln -sf "$REDIRECT_CONF" "/etc/nginx/sites-enabled/$OLD_DOMAIN"
+        nginx -t && systemctl reload nginx
+        echo -e "${GREEN}🔁 Đã cấu hình redirect từ $OLD_DOMAIN sang $NEW_DOMAIN${NC}"
     fi
 }
 info_dakdo() {
