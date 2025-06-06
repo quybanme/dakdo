@@ -176,19 +176,12 @@ backup_single_site() {
 }
 
 backup_all_sites() {
-    TMP_DIR="/tmp/dakdo_all_sites_$(date +%s)"
-    mkdir -p "$TMP_DIR"
-    for DIR in "$WWW_DIR"/*; do
-        [ -d "$DIR" ] && cp -r "$DIR" "$TMP_DIR/"
-    done
-
     ZIP_FILE="$BACKUP_DIR/AllWebsite_backup_$(date +%F).zip"
-    (cd "$TMP_DIR/.." && zip -rq "$ZIP_FILE" "$(basename "$TMP_DIR")")
-    rm -rf "$TMP_DIR"
-
+    (cd "$WWW_DIR" && zip -rq "$ZIP_FILE" .)
     echo -e "${GREEN}✅ Đã backup toàn bộ website vào: $(realpath "$ZIP_FILE")${NC}"
     du -h "$ZIP_FILE"
 }
+
 
 backup_website() {
     BACKUP_DIR="/root/backups"
