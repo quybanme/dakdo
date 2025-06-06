@@ -73,6 +73,10 @@ add_website() {
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
+    if ! echo "$DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
+    echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
+    return
+    fi
     check_domain "$DOMAIN" || return
     SITE_DIR="$WWW_DIR/$DOMAIN"
     mkdir -p "$SITE_DIR"
@@ -162,6 +166,10 @@ ssl_manual() {
         echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
         return
     fi
+    if ! echo "$DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
+    echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
+    return
+    fi
     check_domain "$DOMAIN" || return
     echo -e "${YELLOW}⚠️ Hãy tắt đám mây vàng (Proxy) trên Cloudflare trước khi cài/gia hạn SSL.${NC}"
     certbot --nginx --redirect --non-interactive --agree-tos --email $EMAIL -d $DOMAIN -d www.$DOMAIN
@@ -231,6 +239,10 @@ remove_website() {
         echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
         return
     fi
+    if ! echo "$DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
+    echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
+    return
+    fi
     read -p "❓ Bạn có chắc muốn xoá $DOMAIN? (gõ 'yes' để xác nhận): " CONFIRM
     if [[ "$CONFIRM" != "yes" ]]; then
         echo -e "${YELLOW}⏪ Hủy thao tác xoá.${NC}"
@@ -286,6 +298,10 @@ create_sitemap() {
         read -p "🌐 Nhập domain để tạo sitemap.xml (nhập 0 để quay lại): " DOMAIN
         if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
             echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+            return
+        fi
+        if ! echo "$DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
+            echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
             return
         fi
         generate_sitemap_for_domain "$DOMAIN"
@@ -351,6 +367,10 @@ create_robots() {
             echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
             return
         fi
+        if ! echo "$DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
+            echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
+            return
+        fi
         generate_robots_for_domain "$DOMAIN" "$RULE"
 
     elif [[ "$MODE" == "2" ]]; then
@@ -387,10 +407,9 @@ EOF
 rename_domain() {
     read -p "🔁 Nhập domain cũ (ví dụ: old.com): " OLD_DOMAIN
     read -p "➡️  Nhập domain mới (ví dụ: new.com): " NEW_DOMAIN
-    # ✅ Kiểm tra định dạng domain
     for DOMAIN in "$OLD_DOMAIN" "$NEW_DOMAIN"; do
-    if [[ ! "$DOMAIN" =~ ^[a-zA-Z0-9.-]+$ ]]; then
-        echo -e "${RED}❌ Tên miền '$DOMAIN' không hợp lệ.${NC}"
+    if ! echo "$DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
+        echo -e "${RED}❌ Tên miền \"$DOMAIN\" không hợp lệ.${NC}"
         return
     fi
     done
