@@ -14,23 +14,6 @@ NC="\e[0m"
 mkdir -p /etc/nginx/sites-available
 mkdir -p /etc/nginx/sites-enabled
 
-check_domain() {
-    DOMAIN="$1"
-    if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-        return 1
-    fi
-    DOMAIN_IP=$(dig +short A "$DOMAIN" | head -1)
-    SERVER_IP=$(curl -s https://api.ipify.org)
-    if [ "$DOMAIN_IP" = "$SERVER_IP" ]; then
-        echo -e "${GREEN}✔ Domain $DOMAIN đã trỏ đúng IP ($SERVER_IP)${NC}"
-        return 0
-    else
-        echo -e "${RED}✘ Domain $DOMAIN chưa trỏ về VPS (IP hiện tại: $SERVER_IP)${NC}"
-        return 1
-    fi
-}
-
 # 🧱 Cài đặt nền tảng: Nginx + SSL + Firewall + Default Block
 install_base() {
     if command -v nginx > /dev/null; then
@@ -518,6 +501,8 @@ menu_dakdo() {
     clear
     echo -e "${GREEN}╔══════════════════════════════════════╗"
     echo -e "         DAKDO WEB MANAGER v$DAKDO_VERSION        "
+    echo "🕒 Thời gian hiện tại: $(date '+%H:%M:%S %d-%m-%Y')"
+    echo "🖥️ Tên VPS: $(hostname)"
     echo -e "╚══════════════════════════════════════╝${NC}"
     echo "1. Cài đặt DAKDO (Nginx + SSL + Firewall)"
     echo "2. Thêm Website HTML mới"
