@@ -263,6 +263,11 @@ EOF
     nginx -t && systemctl reload nginx
     echo -e "${RED}🗑 Website $DOMAIN đã bị xoá và được chặn hoàn toàn (HTTP + HTTPS).${NC}"
 }
+list_websites() {
+    echo -e "\n🌐 Danh sách website đã cài:"
+    ls /etc/nginx/sites-available 2>/dev/null || echo "(Không có site nào)"
+    echo
+}
 # 🆕 Tạo sitemap.xml cho website
 create_sitemap() {
     echo -e "\n🔧 Chọn chế độ tạo sitemap.xml:"
