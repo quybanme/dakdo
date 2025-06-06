@@ -304,7 +304,7 @@ menu_dakdo() {
     echo "8. Xoá Website"
     echo "9. Thông tin hệ thống"
     echo "0. Thoát"
-    read -p "→ Chọn thao tác (0-11): " CHOICE
+    read -p "→ Chọn thao tác (0-9): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
