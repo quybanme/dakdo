@@ -283,6 +283,62 @@ EOF
 
     echo -e "${GREEN}✅ Đã tạo sitemap.xml tại $SITE_DIR/sitemap.xml${NC}"
 }
+# 🆕 Tạo robots.txt
+create_robots() {
+    echo -e "\n🔧 Chọn chế độ tạo robots.txt:"
+    echo "1. Tạo cho 1 website cụ thể"
+    echo "2. Tạo cho TẤT CẢ website"
+    read -p "→ Lựa chọn (1-2): " MODE
+
+    echo -e "\n🤖 Chọn chế độ truy cập của bots:"
+    echo "1. Cho phép toàn bộ bots (Allow)"
+    echo "2. Chặn toàn bộ bots (Disallow)"
+    read -p "→ Lựa chọn (1-2): " BOT_MODE
+
+    case $BOT_MODE in
+        1) RULE="Allow: /" ;;
+        2) RULE="Disallow: /" ;;
+        *) echo -e "${RED}❌ Lựa chọn không hợp lệ.${NC}"; return ;;
+    esac
+
+    if [[ "$MODE" == "1" ]]; then
+        read -p "🌐 Nhập domain để tạo robots.txt (nhập 0 để quay lại): " DOMAIN
+        if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
+            echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
+            return
+        fi
+        generate_robots_for_domain "$DOMAIN" "$RULE"
+
+    elif [[ "$MODE" == "2" ]]; then
+        echo -e "${YELLOW}⚠️ Thao tác này sẽ ghi đè robots.txt hiện tại (nếu có) cho tất cả website.${NC}"
+        read -p "❓ Bạn có chắc muốn tiếp tục? (gõ 'yes' để xác nhận): " CONFIRM
+        [[ "$CONFIRM" != "yes" ]] && echo -e "${YELLOW}⏪ Hủy thao tác.${NC}" && return
+        for DIR in "$WWW_DIR"/*; do
+            DOMAIN=$(basename "$DIR")
+            generate_robots_for_domain "$DOMAIN" "$RULE"
+        done
+        echo -e "${GREEN}✅ Đã tạo robots.txt cho tất cả website.${NC}"
+    else
+        echo -e "${RED}❌ Lựa chọn không hợp lệ.${NC}"
+    fi
+}
+
+generate_robots_for_domain() {
+    DOMAIN="$1"
+    RULE="$2"
+    SITE_DIR="$WWW_DIR/$DOMAIN"
+    if [[ ! -d "$SITE_DIR" ]]; then
+        echo -e "${RED}❌ Không tìm thấy thư mục /var/www/$DOMAIN${NC}"
+        return
+    fi
+    echo -e "${GREEN}🤖 Đang tạo robots.txt cho $DOMAIN...${NC}"
+    cat > "$SITE_DIR/robots.txt" <<EOF
+User-agent: *
+$RULE
+Sitemap: https://$DOMAIN/sitemap.xml
+EOF
+    echo -e "${GREEN}✅ Đã tạo robots.txt tại $SITE_DIR/robots.txt${NC}"
+}
 info_dakdo() {
     echo "📦 DAKDO Web Manager v$DAKDO_VERSION"
     echo "🌍 IP VPS: $(curl -s https://api.ipify.org)"
@@ -355,8 +411,9 @@ menu_dakdo() {
     echo "8. Xoá Website"
     echo "9. Thông tin hệ thống"
     echo "10. Tạo sitemap.xml cho Website"
+    echo "11. Tạo robots.txt cho Website"
     echo "0. Thoát"
-    read -p "→ Chọn thao tác (0-10): " CHOICE
+    read -p "→ Chọn thao tác (0-11): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
@@ -368,6 +425,7 @@ menu_dakdo() {
         8) remove_website ;;
         9) info_dakdo ;;
         10) create_sitemap ;;
+        11) create_robots ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
