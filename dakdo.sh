@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v2.6 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v3.0 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="2.6"
+DAKDO_VERSION="3.0"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -509,31 +509,31 @@ menu_dakdo() {
     echo -e "╚══════════════════════════════════════╝${NC}"
     echo "1. Cài đặt DAKDO (Nginx + SSL + Firewall)"
     echo "2. Thêm Website HTML mới"
-    echo "3. Tạo lại cấu hình Nginx từ /var/www"
-    echo "4. Cài / Gia hạn SSL cho Website"
-    echo "5. Danh sách Website đã cài"
-    echo "6. Backup Website"
-    echo "7. Khôi phục Website từ Backup (.zip)"
-    echo "8. Xoá Website"
-    echo "9. Thông tin hệ thống"
-    echo "10. Tạo sitemap.xml cho Website"
-    echo "11. Tạo robots.txt cho Website"
-    echo "12. Đổi tên domain cho Website"
+    echo "3. Danh sách Website đã cài"
+    echo "4. Đổi tên domain cho Website"
+    echo "5. Cài / Gia hạn SSL cho Website"
+    echo "6. Tạo sitemap.xml cho Website"
+    echo "7. Tạo robots.txt cho Website"
+    echo "8. Backup Website"
+    echo "9. Khôi phục Website từ Backup (.zip)"
+    echo "10. Xoá Website"
+    echo "11. Tạo lại cấu hình Nginx từ /var/www"
+    echo "12. Thông tin hệ thống"
     echo "0. Thoát"
     read -p "→ Chọn thao tác (0-12): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
-        3) auto_generate_nginx_configs ;;
-        4) ssl_manual ;;
-        5) list_websites ;;
-        6) backup_website ;;
-        7) restore_website ;;
-        8) remove_website ;;
-        9) info_dakdo ;;
-        10) create_sitemap ;;
-        11) create_robots ;;
-        12) rename_domain ;;
+        3) list_websites ;;
+        4) rename_domain ;;
+        5) ssl_manual ;;
+        6) create_sitemap ;;
+        7) create_robots ;;
+        8) backup_website ;;
+        9) restore_website ;;
+        10) remove_website ;;
+        11) auto_generate_nginx_configs ;;
+        12) info_dakdo ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
