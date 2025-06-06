@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# DAKDO v2.4 – Web Manager for HTML + SSL + Backup + Restore
+# DAKDO v2.5 – Web Manager for HTML + SSL + Backup + Restore
 # Author: @quybanme – https://github.com/quybanme
 
-DAKDO_VERSION="2.4"
+DAKDO_VERSION="2.5"
 WWW_DIR="/var/www"
 EMAIL="i@dakdo.com"
 GREEN="\e[32m"
@@ -52,7 +52,6 @@ install_base() {
         echo "✅ Đã thêm cron tự động gia hạn SSL"
     fi
 }
-
 add_website() {
     read -p "🌐 Nhập domain cần thêm (nhập 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
@@ -157,7 +156,6 @@ ssl_manual() {
         echo -e "${RED}❌ Cài/gia hạn SSL thất bại. Vui lòng kiểm tra cấu hình hoặc kết nối.${NC}"
     fi
 }
-
 backup_website() {
     read -p "💾 Nhập domain cần backup (hoặc * để backup tất cả, 0 để quay lại): " DOMAIN
     if [[ -z "$DOMAIN" || "$DOMAIN" == "0" ]]; then
@@ -207,7 +205,7 @@ restore_website() {
     nginx -t && systemctl reload nginx
 
     if [[ "$ZIP_FILE" == AllWebsite* ]]; then
-        echo -e "${YELLOW}💡 GỢI Ý: Nếu bạn vừa cài lại VPS và KHÔNG còn file cấu hình Nginx, hãy vào menu và chọn mục '11. Tạo lại cấu hình Nginx từ /var/www'.${NC}"
+        echo -e "${YELLOW}💡 GỢI Ý: Nếu bạn vừa cài lại VPS và KHÔNG còn file cấu hình Nginx, hãy vào menu và chọn mục '3. Tạo lại cấu hình Nginx từ /var/www'.${NC}"
     fi
 }
 
@@ -238,7 +236,6 @@ remove_website() {
     nginx -t && systemctl reload nginx
     echo -e "${RED}🗑 Website $DOMAIN đã bị xoá${NC}"
 }
-
 list_websites() {
     echo -e "\n🌐 Danh sách website đã cài:"
     ls /etc/nginx/sites-available 2>/dev/null || echo "(Không có site nào)"
@@ -296,32 +293,32 @@ menu_dakdo() {
     echo -e "╚══════════════════════════════════════╝${NC}"
     echo "1. Cài đặt DAKDO (Nginx + SSL + Firewall)"
     echo "2. Thêm Website HTML mới"
-    echo "3. Cài / Gia hạn SSL cho Website"
-    echo "4. Kiểm tra Domain"
-    echo "5. Danh sách Website đã cài"
-    echo "6. Backup Website"
-    echo "7. Khôi phục Website từ Backup (.zip)"
-    echo "8. Hướng dẫn tải file Backup lên VPS"
-    echo "9. Xoá Website"
-    echo "10. Thông tin hệ thống"
-    echo "11. Tạo lại cấu hình Nginx từ /var/www"
+    echo "3. Tạo lại cấu hình Nginx từ /var/www"
+    echo "4. Cài / Gia hạn SSL cho Website"
+    echo "5. Kiểm tra Domain"
+    echo "6. Danh sách Website đã cài"
+    echo "7. Backup Website"
+    echo "8. Khôi phục Website từ Backup (.zip)"
+    echo "9. Hướng dẫn tải file Backup lên VPS"
+    echo "10. Xoá Website"
+    echo "11. Thông tin hệ thống"
     echo "0. Thoát"
     read -p "→ Chọn thao tác (0-11): " CHOICE
     case $CHOICE in
         1) install_base ;;
         2) add_website ;;
-        3) ssl_manual ;;
-        4)
+        3) auto_generate_nginx_configs ;;
+        4) ssl_manual ;;
+        5)
             read -p "🌐 Nhập domain để kiểm tra (nhập 0 để quay lại): " DOMAIN
             [[ "$DOMAIN" != "0" && -n "$DOMAIN" ]] && check_domain "$DOMAIN"
             ;;
-        5) list_websites ;;
-        6) backup_website ;;
-        7) restore_website ;;
-        8) upload_instructions ;;
-        9) remove_website ;;
-        10) info_dakdo ;;
-        11) auto_generate_nginx_configs ;;
+        6) list_websites ;;
+        7) backup_website ;;
+        8) restore_website ;;
+        9) upload_instructions ;;
+        10) remove_website ;;
+        11) info_dakdo ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
