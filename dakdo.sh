@@ -488,110 +488,6 @@ EOF
     # Reload Nginx sau khi mọi thay đổi hoàn tất
     nginx -t && systemctl reload nginx
 }
-# 🆕 Chức năng 13: Bảo vệ website/thư mục hoặc file .html bằng mật khẩu
-protect_with_password() {
-    echo -e "\n🔒 Chọn chế độ bảo vệ:"
-    echo "1. Bảo vệ toàn bộ website"
-    echo "2. Bảo vệ thư mục"
-    echo "3. Bảo vệ file .html"
-    echo "0. Quay lại menu chính"
-    read -p "👉 Nhập lựa chọn (0-3): " MODE
-
-    if [[ "$MODE" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-        return
-    fi
-
-    if [[ ! "$MODE" =~ ^[1-3]$ ]]; then
-        echo -e "${RED}❌ Lựa chọn không hợp lệ.${NC}"
-        return
-    fi
-
-    read -p "🌐 Nhập tên domain (VD: tenmien.com, nhập 0 để quay lại): " DOMAIN
-    if [[ "$DOMAIN" == "0" ]]; then
-        echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-        return
-    fi
-    if ! echo "$DOMAIN" | grep -qE '^[a-zA-Z0-9.-]+$'; then
-        echo -e "${RED}❌ Tên miền không hợp lệ.${NC}"
-        return
-    fi
-
-    CONF_FILE="/etc/nginx/sites-available/$DOMAIN"
-    if [ ! -f "$CONF_FILE" ]; then
-        echo -e "${RED}❌ Website chưa được cài đặt hoặc domain không tồn tại.${NC}"
-        return
-    fi
-
-    LOCATION="/"
-    if [ "$MODE" == "2" ]; then
-        read -p "📁 Nhập đường dẫn thư mục cần bảo vệ (VD: /abc/, nhập 0 để quay lại): " LOCATION
-        if [[ "$LOCATION" == "0" ]]; then
-            echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-            return
-        fi
-    elif [ "$MODE" == "3" ]; then
-        read -p "📄 Nhập đường dẫn file .html cần bảo vệ (VD: /abc/index.html, nhập 0 để quay lại): " LOCATION
-        if [[ "$LOCATION" == "0" ]]; then
-            echo -e "${YELLOW}⏪ Đã quay lại menu chính.${NC}"
-            return
-        fi
-    fi
-
-    # Tạo file htpasswd nếu chưa có
-    HTPASSWD_FILE="/etc/nginx/.htpasswd"
-    echo -e "👤 Nhập thông tin đăng nhập để bảo vệ:"
-    read -p "👤 Username: " USERNAME
-    read -s -p "🔑 Password: " PASSWORD
-    echo
-    if ! command -v openssl &>/dev/null; then
-        echo -e "${YELLOW}⚠️ Đang cài đặt openssl...${NC}"
-        apt install -y openssl > /dev/null
-    fi
-
-    HASH=$(openssl passwd -apr1 "$PASSWORD")
-    echo "$USERNAME:$HASH" > "$HTPASSWD_FILE"
-
-    echo -e "\n📦 Đang tạo file cấu hình bảo vệ riêng..."
-
-    # Tạo file cấu hình phụ
-    PROTECT_DIR="/etc/nginx/protect"
-    mkdir -p "$PROTECT_DIR"
-    INCLUDE_FILE="$PROTECT_DIR/$DOMAIN-location.conf"
-
-    if [ "$MODE" == "3" ]; then
-        echo -e "location = $LOCATION {\n    auth_basic \"Restricted\";\n    auth_basic_user_file $HTPASSWD_FILE;\n}" > "$INCLUDE_FILE"
-    else
-        echo -e "location $LOCATION {\n    auth_basic \"Restricted\";\n    auth_basic_user_file $HTPASSWD_FILE;\n}" > "$INCLUDE_FILE"
-    fi
-
-    # Chèn include vào khối server chứa server_name DOMAIN
-    if ! grep -q "$INCLUDE_FILE" "$CONF_FILE"; then
-        TMP_FILE=$(mktemp)
-        awk -v domain="$DOMAIN" -v inc="    include $INCLUDE_FILE;" '
-            $0 ~ /server\s*{/ { in_server = 1; inside = "" }
-            in_server && $0 ~ /server_name/ && $0 ~ domain {
-                inside = 1
-            }
-            {
-                if (inside && $0 ~ /^[ \t]*}[ \t]*$/ && !inserted) {
-                    print inc
-                    inserted = 1
-                }
-                print
-            }
-        ' "$CONF_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONF_FILE"
-    fi
-
-    if nginx -t; then
-        systemctl reload nginx
-        echo -e "${GREEN}✅ Đã bật bảo vệ bằng mật khẩu cho $DOMAIN tại $LOCATION.${NC}"
-    else
-        echo -e "${RED}❌ Cấu hình Nginx bị lỗi. Hủy thay đổi.${NC}"
-        echo -e "---- Nội dung file cấu hình hiện tại ----"
-        cat "$CONF_FILE"
-    fi
-}
 info_dakdo() {
     echo "📦 DAKDO STATIC v$DAKDO_VERSION"
     echo "🌍 IP VPS: $(curl -s https://api.ipify.org)"
@@ -666,7 +562,6 @@ menu_dakdo() {
     echo "10. Xoá Website"
     echo "11. Tạo lại cấu hình Nginx từ /var/www"
     echo "12. Thông tin hệ thống"
-    echo "13. 🔒 Bảo vệ website/thư mục hoặc file .html bằng mật khẩu"
     echo "0. Thoát"
     read -p "→ Chọn thao tác (0-12): " CHOICE
     case $CHOICE in
@@ -682,7 +577,6 @@ menu_dakdo() {
         10) remove_website ;;
         11) auto_generate_nginx_configs ;;
         12) info_dakdo ;;
-        13) protect_with_password ;;
         0) exit 0 ;;
         *) echo "❗ Lựa chọn không hợp lệ" ;;
     esac
