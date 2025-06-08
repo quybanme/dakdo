@@ -552,24 +552,30 @@ protect_with_password() {
     HASH=$(openssl passwd -apr1 "$PASSWORD")
     echo "$USERNAME:$HASH" > "$HTPASSWD_FILE"
 
-    echo -e "\n📦 Đang chèn cấu hình bảo vệ trực tiếp vào file Nginx..."
+    echo -e "\n📦 Đang tạo file cấu hình bảo vệ riêng..."
 
-    if grep -q "auth_basic" "$CONF_FILE" && grep -q "$LOCATION" "$CONF_FILE"; then
-        echo -e "${YELLOW}⚠️ Đã tồn tại cấu hình bảo vệ tại $LOCATION. Bỏ qua.${NC}"
+    # Tạo file cấu hình phụ
+    PROTECT_DIR="/etc/nginx/protect"
+    mkdir -p "$PROTECT_DIR"
+    INCLUDE_FILE="$PROTECT_DIR/$DOMAIN-location.conf"
+
+    if [ "$MODE" == "3" ]; then
+        echo -e "location = $LOCATION {\n    auth_basic \"Restricted\";\n    auth_basic_user_file $HTPASSWD_FILE;\n}" > "$INCLUDE_FILE"
     else
-        if [ "$MODE" == "3" ]; then
-            LOCATION_BLOCK="    location = $LOCATION {\n        auth_basic \"Restricted\";\n        auth_basic_user_file $HTPASSWD_FILE;\n    }"
-        else
-            LOCATION_BLOCK="    location $LOCATION {\n        auth_basic \"Restricted\";\n        auth_basic_user_file $HTPASSWD_FILE;\n    }"
-        fi
+        echo -e "location $LOCATION {\n    auth_basic \"Restricted\";\n    auth_basic_user_file $HTPASSWD_FILE;\n}" > "$INCLUDE_FILE"
+    fi
 
+    # Chèn include vào khối server chứa server_name DOMAIN
+    if ! grep -q "$INCLUDE_FILE" "$CONF_FILE"; then
         TMP_FILE=$(mktemp)
-        awk -v block="$LOCATION_BLOCK" '
-            $0 ~ /server\s*{/ { in_server = 1 }
-            in_server && $0 ~ /root/ { is_target = 1 }
+        awk -v domain="$DOMAIN" -v inc="    include $INCLUDE_FILE;" '
+            $0 ~ /server\s*{/ { in_server = 1; inside = "" }
+            in_server && $0 ~ /server_name/ && $0 ~ domain {
+                inside = 1
+            }
             {
-                if (is_target && $0 ~ /^[ \t]*}[ \t]*$/ && !inserted) {
-                    print block
+                if (inside && $0 ~ /^[ \t]*}[ \t]*$/ && !inserted) {
+                    print inc
                     inserted = 1
                 }
                 print
