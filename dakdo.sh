@@ -562,9 +562,23 @@ protect_with_password() {
         echo -e "location $LOCATION {\n    auth_basic \"Restricted\";\n    auth_basic_user_file $HTPASSWD_FILE;\n}" > "$SNIPPET_FILE"
     fi
 
-    # Kiểm tra xem file domain đã include chưa, nếu chưa thì thêm trước dấu } cuối
+    # Kiểm tra xem file domain đã include chưa, nếu chưa thì chèn đúng vào khối server
     if ! grep -q "snippets/protect-$DOMAIN.conf" "$CONF_FILE"; then
-        sed -i '/^[ \t]*}[ \t]*$/i \    include /etc/nginx/snippets/protect-'"$DOMAIN"'.conf;' "$CONF_FILE"
+        TMP_FILE=$(mktemp)
+        awk -v inc="    include /etc/nginx/snippets/protect-$DOMAIN.conf;" '
+            BEGIN { depth = 0; inserted = 0 }
+            {
+                if ($0 ~ /{/) depth++
+                if ($0 ~ /}/) {
+                    depth--
+                    if (depth == 0 && !inserted) {
+                        print inc
+                        inserted = 1
+                    }
+                }
+                print
+            }
+        ' "$CONF_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONF_FILE"
     fi
 
     nginx -t && systemctl reload nginx
