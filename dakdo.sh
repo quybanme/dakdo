@@ -563,18 +563,15 @@ protect_with_password() {
             LOCATION_BLOCK="    location $LOCATION {\n        auth_basic \"Restricted\";\n        auth_basic_user_file $HTPASSWD_FILE;\n    }"
         fi
 
-        TMP_FILE=$(mktemp)
-        awk -v block="$LOCATION_BLOCK" '
-            $0 ~ /server\s*{/ { server_block = 1 }
-            server_block && $0 ~ /root/ { inside_main_server = 1 }
-            {
-                if (inside_main_server && $0 ~ /^[ \t]*}[ \t]*$/ && !inserted) {
-                    print block
-                    inserted = 1
-                }
-                print
-            }
-        ' "$CONF_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONF_FILE"
+        # Chèn ngay sau dòng 'location / {'
+        if grep -q "location /" "$CONF_FILE"; then
+            sed -i "/location \/ {/a\
+$LOCATION_BLOCK\
+" "$CONF_FILE"
+        else
+            echo -e "${RED}❌ Không tìm thấy block 'location /' trong $CONF_FILE.${NC}"
+            return
+        fi
     fi
 
     if nginx -t; then
