@@ -552,20 +552,20 @@ protect_with_password() {
     HASH=$(openssl passwd -apr1 "$PASSWORD")
     echo "$USERNAME:$HASH" > "$HTPASSWD_FILE"
 
-    # Ghi block location vào file cấu hình
+    # Ghi block location vào file cấu hình đúng vị trí trong server block
     echo -e "\n📦 Đang thêm cấu hình bảo vệ vào Nginx..."
 
     if grep -q "auth_basic" "$CONF_FILE" && grep -q "$LOCATION" "$CONF_FILE"; then
         echo -e "${YELLOW}⚠️ Đã tồn tại cấu hình bảo vệ tại $LOCATION. Bỏ qua.${NC}"
     else
         if [ "$MODE" == "3" ]; then
-            echo -e "\n    location = $LOCATION {" >> "$CONF_FILE"
+            LOCATION_BLOCK="\n    location = $LOCATION {\n        auth_basic \"Restricted\";\n        auth_basic_user_file $HTPASSWD_FILE;\n    }"
         else
-            echo -e "\n    location $LOCATION {" >> "$CONF_FILE"
+            LOCATION_BLOCK="\n    location $LOCATION {\n        auth_basic \"Restricted\";\n        auth_basic_user_file $HTPASSWD_FILE;\n    }"
         fi
-        echo -e "        auth_basic \"Restricted\";" >> "$CONF_FILE"
-        echo -e "        auth_basic_user_file $HTPASSWD_FILE;" >> "$CONF_FILE"
-        echo -e "    }" >> "$CONF_FILE"
+
+        TMP_FILE=$(mktemp)
+        awk -v block="$LOCATION_BLOCK" 'BEGIN{inserted=0} /}[ \t]*$/ && !inserted { print block; inserted=1 } { print }' "$CONF_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONF_FILE"
     fi
 
     nginx -t && systemctl reload nginx
