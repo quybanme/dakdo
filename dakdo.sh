@@ -552,19 +552,19 @@ protect_with_password() {
     HASH=$(openssl passwd -apr1 "$PASSWORD")
     echo "$USERNAME:$HASH" > "$HTPASSWD_FILE"
 
-    echo -e "\n📦 Đang thêm cấu hình bảo vệ vào Nginx..."
+    echo -e "\n📦 Đang tạo file cấu hình bảo vệ riêng..."
 
-    if grep -q "auth_basic" "$CONF_FILE" && grep -q "$LOCATION" "$CONF_FILE"; then
-        echo -e "${YELLOW}⚠️ Đã tồn tại cấu hình bảo vệ tại $LOCATION. Bỏ qua.${NC}"
+    # Tạo file include riêng cho bảo vệ
+    SNIPPET_FILE="/etc/nginx/snippets/protect-$DOMAIN.conf"
+    if [ "$MODE" == "3" ]; then
+        echo -e "location = $LOCATION {\n    auth_basic \"Restricted\";\n    auth_basic_user_file $HTPASSWD_FILE;\n}" > "$SNIPPET_FILE"
     else
-        if [ "$MODE" == "3" ]; then
-            LOCATION_BLOCK="    location = $LOCATION {\n        auth_basic \"Restricted\";\n        auth_basic_user_file $HTPASSWD_FILE;\n    }"
-        else
-            LOCATION_BLOCK="    location $LOCATION {\n        auth_basic \"Restricted\";\n        auth_basic_user_file $HTPASSWD_FILE;\n    }"
-        fi
+        echo -e "location $LOCATION {\n    auth_basic \"Restricted\";\n    auth_basic_user_file $HTPASSWD_FILE;\n}" > "$SNIPPET_FILE"
+    fi
 
-        TMP_FILE=$(mktemp)
-        awk -v block="$LOCATION_BLOCK" 'BEGIN { inserted = 0 } { if ($0 ~ /^[ \t]*}[ \t]*$/ && !inserted) { print block; inserted = 1 } print }' "$CONF_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONF_FILE"
+    # Kiểm tra xem file domain đã include chưa, nếu chưa thì thêm trước dấu } cuối
+    if ! grep -q "snippets/protect-$DOMAIN.conf" "$CONF_FILE"; then
+        sed -i '/^[ \t]*}[ \t]*$/i \    include /etc/nginx/snippets/protect-'"$DOMAIN"'.conf;' "$CONF_FILE"
     fi
 
     nginx -t && systemctl reload nginx
