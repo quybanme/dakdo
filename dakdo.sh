@@ -565,15 +565,12 @@ protect_with_password() {
 
         TMP_FILE=$(mktemp)
         awk -v block="$LOCATION_BLOCK" '
-            BEGIN { depth = 0; inserted = 0 }
+            $0 ~ /server\s*{/ { server_block = 1 }
+            server_block && $0 ~ /root/ { inside_main_server = 1 }
             {
-                if ($0 ~ /{/) depth++
-                if ($0 ~ /}/) {
-                    depth--
-                    if (depth == 0 && !inserted) {
-                        print block
-                        inserted = 1
-                    }
+                if (inside_main_server && $0 ~ /^[ \t]*}[ \t]*$/ && !inserted) {
+                    print block
+                    inserted = 1
                 }
                 print
             }
