@@ -563,8 +563,8 @@ protect_with_password() {
             LOCATION_BLOCK="    location $LOCATION {\n        auth_basic \"Restricted\";\n        auth_basic_user_file $HTPASSWD_FILE;\n    }"
         fi
 
-        # Chèn block trước dấu } cuối cùng trong file
-        sed -i "$ i\\n$LOCATION_BLOCK" "$CONF_FILE"
+        TMP_FILE=$(mktemp)
+        awk -v block="$LOCATION_BLOCK" 'BEGIN { inserted = 0 } { if ($0 ~ /^[ \t]*}[ \t]*$/ && !inserted) { print block; inserted = 1 } print }' "$CONF_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONF_FILE"
     fi
 
     nginx -t && systemctl reload nginx
